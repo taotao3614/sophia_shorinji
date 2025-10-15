@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>出欠表 - 上智大学少林寺拳法部</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+  <div class="header">
+    <h1>出欠表</h1>
+    <p>練習への出席状況を確認・入力できます</p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-title">📋 今月の出欠表</div>
+      <div class="card-description">
+        Googleスプレッドシートで出席状況を管理しています。<br>
+        下のボタンから出欠表を開いて記入してください。
+      </div>
+      <button class="btn" id="open-attendance">出欠表を開く</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 出席率</div>
+      <div class="card-description">
+        あなたの今月の出席率: <strong>計算中...</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2025 上智大学少林寺拳法部</p>
+  </div>
+
+  <script src="./js/common.js"></script>
+  <script>
+    async function initPage() {
+      showLoading();
+      try {
+        await initializeLiff();
+
+        document.getElementById('open-attendance').addEventListener('click', () => {
+          const config = getConfig();
+          if (config && config.attendanceSheetUrl) {
+            openExternalUrl(config.attendanceSheetUrl);
+          } else {
+            showAlert('出欠表のURLが設定されていません', 'error');
+          }
+        });
+      } catch (error) {
+        console.error('初期化エラー:', error);
+        showAlert('ページの初期化に失敗しました', 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    window.addEventListener('load', initPage);
+  </script>
+</body>
+</html>

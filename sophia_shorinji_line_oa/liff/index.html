@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>上智大学少林寺拳法部</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+  <div class="header">
+    <h1>上智大学少林寺拳法部</h1>
+    <p id="user-name">ようこそ</p>
+  </div>
+
+  <div class="container">
+    <!-- メインメニュー -->
+    <div class="menu-grid">
+      <a href="./attendance.html" class="menu-item">
+        <span class="icon">📋</span>
+        <div class="label">出欠表</div>
+      </a>
+
+      <a href="./vote.html" class="menu-item">
+        <span class="icon">🗳️</span>
+        <div class="label">投票・日程調整</div>
+      </a>
+
+      <a href="./materials.html" class="menu-item">
+        <span class="icon">📚</span>
+        <div class="label">資料参照</div>
+      </a>
+
+      <a href="./apply.html" class="menu-item">
+        <span class="icon">📝</span>
+        <div class="label">外部申請</div>
+      </a>
+
+      <a href="./contact.html" class="menu-item">
+        <span class="icon">📞</span>
+        <div class="label">連絡先</div>
+      </a>
+
+      <a href="./settings.html" class="menu-item">
+        <span class="icon">⚙️</span>
+        <div class="label">設定</div>
+      </a>
+    </div>
+
+    <!-- お知らせカード -->
+    <div class="card">
+      <div class="card-title">📢 お知らせ</div>
+      <div class="card-description">
+        新入生歓迎会を4月15日(土)に開催します。<br>
+        詳細は「投票・日程調整」からご確認ください。
+      </div>
+    </div>
+
+    <!-- クイックアクセス -->
+    <div class="card">
+      <div class="card-title">🔗 クイックアクセス</div>
+      <div class="card-description">よく使う機能にすぐアクセスできます</div>
+      <button class="btn mt-20" id="quick-attendance">出欠表を開く</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2025 上智大学少林寺拳法部</p>
+    <p>Powered by LINE LIFF</p>
+  </div>
+
+  <script src="./js/common.js"></script>
+  <script>
+    // ページ初期化
+    async function initPage() {
+      showLoading();
+
+      try {
+        // LIFF初期化
+        const initialized = await initializeLiff();
+        if (!initialized) {
+          throw new Error('LIFF初期化失敗');
+        }
+
+        // ユーザープロフィール取得
+        const profile = await getUserProfile();
+        if (profile) {
+          document.getElementById('user-name').textContent =
+            `${profile.displayName}さん、ようこそ`;
+        }
+
+        // クイックアクセスボタンのイベント設定
+        document.getElementById('quick-attendance').addEventListener('click', () => {
+          const config = getConfig();
+          if (config && config.attendanceSheetUrl) {
+            openExternalUrl(config.attendanceSheetUrl);
+          } else {
+            showAlert('出欠表のURLが設定されていません', 'error');
+          }
+        });
+
+      } catch (error) {
+        console.error('初期化エラー:', error);
+        showAlert('ページの初期化に失敗しました', 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ページ読み込み時に初期化
+    window.addEventListener('load', initPage);
+  </script>
+</body>
+</html>

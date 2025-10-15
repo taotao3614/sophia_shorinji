@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>投票・日程調整 - 上智大学少林寺拳法部</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+  <div class="header">
+    <h1>投票・日程調整</h1>
+    <p>アンケートや日程調整を作成・共有できます</p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-title">🗳️ 投票を作成</div>
+      <div class="card-description">
+        Googleフォームで新しい投票やアンケートを作成し、LINEグループに共有できます。
+      </div>
+      <button class="btn" id="create-vote">新規投票を作成</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📅 日程調整を作成</div>
+      <div class="card-description">
+        イベントや合宿の日程調整フォームを作成できます。
+      </div>
+      <button class="btn btn-secondary" id="create-schedule">日程調整を作成</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 過去の投票結果</div>
+      <div id="vote-list" class="card-description">
+        過去の投票結果を読み込み中...
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2025 上智大学少林寺拳法部</p>
+  </div>
+
+  <script src="./js/common.js"></script>
+  <script>
+    async function initPage() {
+      showLoading();
+      try {
+        await initializeLiff();
+
+        document.getElementById('create-vote').addEventListener('click', () => {
+          openExternalUrl('https://docs.google.com/forms/');
+          showAlert('Googleフォームで投票を作成し、URLをコピーして共有してください', 'info');
+        });
+
+        document.getElementById('create-schedule').addEventListener('click', () => {
+          openExternalUrl('https://docs.google.com/forms/');
+          showAlert('Googleフォームで日程調整を作成してください', 'info');
+        });
+
+        // 今後実装: 過去の投票リストを表示
+        document.getElementById('vote-list').textContent = '実装予定の機能です';
+
+      } catch (error) {
+        console.error('初期化エラー:', error);
+        showAlert('ページの初期化に失敗しました', 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    window.addEventListener('load', initPage);
+  </script>
+</body>
+</html>
