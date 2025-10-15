@@ -1,0 +1,72 @@
+{
+  "liffId": "YOUR_LIFF_ID_HERE",
+  "channelAccessToken": "YOUR_CHANNEL_ACCESS_TOKEN_HERE",
+  "attendanceSheetUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID",
+  "externalApplicationFormUrl": "https://forms.gle/YOUR_FORM_ID",
+  "materials": {
+    "categories": [
+      {
+        "id": "technique",
+        "name": "技術動画",
+        "icon": "📹",
+        "items": [
+          {
+            "title": "基本技法解説",
+            "type": "youtube",
+            "url": "https://www.youtube.com/watch?v=EXAMPLE",
+            "description": "少林寺拳法の基本技法を解説"
+          },
+          {
+            "title": "組演武の流れ",
+            "type": "youtube",
+            "url": "https://www.youtube.com/watch?v=EXAMPLE2",
+            "description": "組演武の一連の流れを確認できます"
+          }
+        ]
+      },
+      {
+        "id": "schedule",
+        "name": "稽古予定",
+        "icon": "📅",
+        "items": [
+          {
+            "title": "月間スケジュール",
+            "type": "gdrive",
+            "url": "https://drive.google.com/file/d/EXAMPLE",
+            "description": "今月の稽古予定表"
+          },
+          {
+            "title": "年間スケジュール",
+            "type": "gdrive",
+            "url": "https://drive.google.com/file/d/EXAMPLE2",
+            "description": "年間の活動予定"
+          }
+        ]
+      },
+      {
+        "id": "promotion",
+        "name": "広報資料",
+        "icon": "📢",
+        "items": [
+          {
+            "title": "Instagram",
+            "type": "social",
+            "url": "https://www.instagram.com/YOUR_ACCOUNT",
+            "description": "公式Instagramアカウント"
+          },
+          {
+            "title": "新歓パンフレット",
+            "type": "gdrive",
+            "url": "https://drive.google.com/file/d/EXAMPLE",
+            "description": "新入生向けの紹介資料"
+          }
+        ]
+      }
+    ]
+  },
+  "contacts": {
+    "email": "sophia.shorinji@example.com",
+    "instagram": "@sophia_shorinji",
+    "line_oa": "@abc1234"
+  }
+}
