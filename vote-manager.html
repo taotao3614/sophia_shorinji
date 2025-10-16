@@ -628,9 +628,8 @@
       const statusText = vote.status === 'active' ? '進行中' : '終了';
       const deadlineText = vote.deadline ? `締切: ${formatDate(vote.deadline)}` : '締切なし';
 
-      // 進捗バーの計算
-      const stats = vote.stats || { total: 0, responded: 0, notRespondedCount: 0 };
-      const percentage = stats.total > 0 ? Math.round((stats.responded / stats.total) * 100) : 0;
+      // 🚀 パフォーマンス最適化：統計情報の表示を削除
+      // stats は GAS から返されなくなったため、プログレスバーも非表示
 
       // 緊急バッジ
       let urgentBadge = '';
@@ -644,23 +643,16 @@
         }
       }
 
+      // 対象グループを表示
+      const targetGroupBadge = vote.targetGroup ?
+        `<div style="font-size: 0.85rem; color: #666; margin-bottom: 8px;">📋 対象: ${escapeHtml(vote.targetGroup)}</div>` : '';
+
       return `
         <div class="vote-card" data-vote-id="${vote.voteId}">
           ${urgentBadge}
           <div class="vote-card-title">${escapeHtml(vote.title)}</div>
           ${vote.description ? `<div class="vote-card-description">${escapeHtml(vote.description)}</div>` : ''}
-
-          ${stats.total > 0 ? `
-            <div class="vote-progress">
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: ${percentage}%"></div>
-              </div>
-              <div class="vote-stats">
-                <span>👥 ${stats.responded}/${stats.total}人 回答済み</span>
-                <span>${percentage}%</span>
-              </div>
-            </div>
-          ` : ''}
+          ${targetGroupBadge}
 
           <div class="vote-card-meta">
             <span>${deadlineText}</span>

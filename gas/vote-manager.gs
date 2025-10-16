@@ -280,8 +280,8 @@ function listVotes(params) {
         }
       }
 
-      // 回答進捗を取得 🆕
-      const stats = getResponseStatsQuick(formId, targetGroup);
+      // 🚀 パフォーマンス最適化：統計情報は省略（必要に応じて個別取得）
+      // const stats = getResponseStatsQuick(formId, targetGroup);
 
       votes.push({
         formUrl,              // Form URLが主キー
@@ -293,7 +293,8 @@ function listVotes(params) {
         deadline,
         status,
         daysLeft: daysLeft,
-        stats: stats  // { total, responded, notRespondedCount }
+        targetGroup: targetGroup,  // 🆕 グループ名を返す
+        // stats: stats  // 統計は必要時に getVoteDetail で取得
       });
     }
 
