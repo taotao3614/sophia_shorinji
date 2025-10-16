@@ -21,6 +21,7 @@
 // ===== 設定 =====
 // このスクリプトはSpreadsheetに直接バインドされています
 var MASTER_SHEET_NAME = '投票管理';
+var MEMBER_SHEET_NAME = '人員管理';  // 🆕 人員管理表
 var CHANNEL_ACCESS_TOKEN = 'YOUR_CHANNEL_ACCESS_TOKEN_HERE';  // LINE Channel Access Token（提醒機能用）
 
 /**
@@ -45,6 +46,9 @@ function doPost(e) {
         break;
       case 'getVoteDetail':
         result = getVoteDetail(params);
+        break;
+      case 'getGroupNames':  // 🆕 グループ名取得
+        result = getGroupNames();
         break;
       case 'checkDeadlines':
         result = checkDeadlines();
@@ -108,7 +112,7 @@ function getMasterSheet() {
       '作成日時',            // F列
       '締切日時',            // G列
       'ステータス',          // H列
-      '応答対象者',          // I列
+      '対象グループ',        // I列 - 🆕 分組名（不再是成員列表）
       '提醒送信済'           // J列
     ]]);
     sheet.getRange(1, 1, 1, 10).setFontWeight('bold');
@@ -129,13 +133,20 @@ function getMasterSheet() {
  */
 function createVote(params) {
   try {
-    const { title, description, options, deadline, targetMembers } = params;
+    const { title, description, options, deadline, targetGroup } = params;  // 🆕 targetGroup
 
     // バリデーション
     if (!title || !options || !Array.isArray(options) || options.length === 0) {
       return {
         success: false,
         error: 'タイトルと選択肢が必要です'
+      };
+    }
+
+    if (!targetGroup) {  // 🆕 グループ必須チェック
+      return {
+        success: false,
+        error: '対象グループを選択してください'
       };
     }
 
@@ -152,10 +163,10 @@ function createVote(params) {
       form.setDescription(formDescription);
     }
 
-    // 【重要】姓名フィールドを最初に追加（必須）
+    // 【重要】学号フィールドを最初に追加（必須）🆕
     form.addTextItem()
-      .setTitle('お名前（必須）')
-      .setHelpText('※正確な名前を入力してください')
+      .setTitle('学号（必須）')
+      .setHelpText('※正確な学号を入力してください（例：2151001）')
       .setRequired(true);
 
     // 選択肢の質問を追加
@@ -187,11 +198,6 @@ function createVote(params) {
     const createdAt = new Date().toISOString();
     const status = 'active';
 
-    // 応答対象者をカンマ区切りの文字列に変換
-    const targetMembersStr = Array.isArray(targetMembers)
-      ? targetMembers.join(',')
-      : (targetMembers || '');
-
     sheet.appendRow([
       formUrl,            // A列 - Form URL（主キー）
       formId,             // B列 - Form ID
@@ -201,7 +207,7 @@ function createVote(params) {
       createdAt,          // F列 - 作成日時
       deadline || '',     // G列 - 締切
       status,             // H列 - ステータス
-      targetMembersStr,   // I列 - 応答対象者
+      targetGroup,        // I列 - 🆕 対象グループ名
       false               // J列 - 提醒送信済
     ]);
 
@@ -259,7 +265,7 @@ function listVotes(params) {
       const createdAt = row[5];      // F列
       const deadline = row[6];       // G列
       let status = row[7];           // H列
-      const targetMembersStr = row[8] || '';  // I列
+      const targetGroup = row[8] || '';  // I列 - 🆕 対象グループ名
 
       // 締切をチェックしてステータスを更新
       let daysLeft = null;
@@ -274,8 +280,8 @@ function listVotes(params) {
         }
       }
 
-      // 回答進捗を取得
-      const stats = getResponseStatsQuick(formId, targetMembersStr);
+      // 回答進捗を取得 🆕
+      const stats = getResponseStatsQuick(formId, targetGroup);
 
       votes.push({
         formUrl,              // Form URLが主キー
@@ -342,13 +348,13 @@ function getVoteDetail(params) {
           createdAt: row[5],       // F列
           deadline: row[6],        // G列
           status: row[7],          // H列
-          targetMembersStr: row[8] || ''  // I列
+          targetGroup: row[8] || ''  // I列 - 🆕 対象グループ名
         };
 
-        // 回答データを詳細に取得
+        // 回答データを詳細に取得 🆕
         const responseData = getResponseDetails(
           voteData.formId,
-          voteData.targetMembersStr
+          voteData.targetGroup
         );
 
         // 締切までの日数を計算
@@ -398,24 +404,26 @@ function getVoteDetail(params) {
 }
 
 /**
- * 回答進捗を簡易取得（リスト表示用）
+ * 回答進捗を簡易取得（リスト表示用）🆕 学号ベース
  */
-function getResponseStatsQuick(formId, targetMembersStr) {
+function getResponseStatsQuick(formId, targetGroup) {
   try {
-    if (!formId || !targetMembersStr) {
+    if (!formId || !targetGroup) {
       return { total: 0, responded: 0, notRespondedCount: 0 };
     }
 
-    const form = FormApp.openById(formId);
-    const responses = form.getResponses();
+    // 1. 対象グループの学号リストを取得
+    var targetStudentIds = getStudentIdsByGroup(targetGroup);
 
-    const targetMembers = targetMembersStr.split(',').map(s => s.trim()).filter(s => s);
-    const respondedCount = responses.length;
+    // 2. Formの回答を取得
+    var form = FormApp.openById(formId);
+    var responses = form.getResponses();
+    var respondedCount = responses.length;
 
     return {
-      total: targetMembers.length,
+      total: targetStudentIds.length,
       responded: respondedCount,
-      notRespondedCount: Math.max(0, targetMembers.length - respondedCount)
+      notRespondedCount: Math.max(0, targetStudentIds.length - respondedCount)
     };
 
   } catch (error) {
@@ -425,17 +433,14 @@ function getResponseStatsQuick(formId, targetMembersStr) {
 }
 
 /**
- * 回答詳細を取得（名前ベースの比較）
+ * 回答詳細を取得（🆕 学号ベースの比較）
  */
-function getResponseDetails(formId, targetMembersStr) {
+function getResponseDetails(formId, targetGroup) {
   try {
-    // 応答対象者リストを配列に変換
-    const targetMembers = targetMembersStr
-      .split(',')
-      .map(s => s.trim())
-      .filter(s => s);
+    // 1. 対象グループの学号リストを取得
+    var targetStudentIds = getStudentIdsByGroup(targetGroup);
 
-    if (targetMembers.length === 0) {
+    if (targetStudentIds.length === 0) {
       return {
         targetMembers: [],
         respondedMembers: [],
@@ -443,26 +448,48 @@ function getResponseDetails(formId, targetMembersStr) {
       };
     }
 
-    // Formの回答を取得
-    const form = FormApp.openById(formId);
-    const responses = form.getResponses();
+    // 2. Formの回答を取得
+    var form = FormApp.openById(formId);
+    var responses = form.getResponses();
 
-    // 回答者の名前を抽出（最初の質問が名前）
-    const respondedMembers = [];
-    responses.forEach(response => {
-      const itemResponses = response.getItemResponses();
+    // 3. 回答者の学号を抽出（最初の質問が学号）
+    var respondedStudentIds = [];
+    responses.forEach(function(response) {
+      var itemResponses = response.getItemResponses();
       if (itemResponses.length > 0) {
-        const name = itemResponses[0].getResponse().trim();
-        if (name) {
-          respondedMembers.push(name);
+        var studentId = String(itemResponses[0].getResponse()).trim();
+        if (studentId) {
+          respondedStudentIds.push(studentId);
         }
       }
     });
 
-    // 未回答者を計算
-    const notRespondedMembers = targetMembers.filter(
-      name => !respondedMembers.includes(name)
-    );
+    // 4. 未回答者を計算
+    var notRespondedStudentIds = targetStudentIds.filter(function(id) {
+      return respondedStudentIds.indexOf(id) === -1;
+    });
+
+    // 5. 学号を {studentId, name} オブジェクトに変換
+    var targetMembers = targetStudentIds.map(function(id) {
+      return {
+        studentId: id,
+        name: getNameByStudentId(id)
+      };
+    });
+
+    var respondedMembers = respondedStudentIds.map(function(id) {
+      return {
+        studentId: id,
+        name: getNameByStudentId(id)
+      };
+    });
+
+    var notRespondedMembers = notRespondedStudentIds.map(function(id) {
+      return {
+        studentId: id,
+        name: getNameByStudentId(id)
+      };
+    });
 
     return {
       targetMembers: targetMembers,
@@ -674,7 +701,7 @@ function initializeMasterSheet() {
       '作成日時',            // F列
       '締切日時',            // G列
       'ステータス',          // H列
-      '応答対象者',          // I列
+      '対象グループ',        // I列 - 🆕 分組名
       '提醒送信済'           // J列
     ]]);
 
@@ -772,4 +799,202 @@ function testGetVoteDetail() {
     formUrl: 'https://forms.gle/xxxxx'
   });
   Logger.log(JSON.stringify(result, null, 2));
+}
+
+// ========================================
+// 🆕 人員管理システム関連の関数
+// ========================================
+
+/**
+ * 【初期化関数】人員管理表を初期化
+ * Apps Scriptエディタから直接実行してください
+ */
+function initializeMemberSheet() {
+  try {
+    Logger.log('=== 人員管理表初期化開始 ===');
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(MEMBER_SHEET_NAME);
+
+    // 既存のシートがある場合は削除
+    if (sheet) {
+      Logger.log('既存の人員管理表を削除します: ' + MEMBER_SHEET_NAME);
+      ss.deleteSheet(sheet);
+    }
+
+    // 新しいシートを作成
+    Logger.log('新しい人員管理表を作成します: ' + MEMBER_SHEET_NAME);
+    sheet = ss.insertSheet(MEMBER_SHEET_NAME);
+
+    // ヘッダー行（サンプル）
+    sheet.getRange(1, 1, 1, 5).setValues([[
+      '学号',      // A列 - 固定（主キー）
+      '姓名',      // B列 - 固定
+      '51-53代',  // C列 - グループ1（カスタマイズ可）
+      '52代',     // D列 - グループ2（カスタマイズ可）
+      '执行部'     // E列 - グループ3（カスタマイズ可）
+    ]]);
+
+    // ヘッダー行のスタイル設定
+    var headerRange = sheet.getRange(1, 1, 1, 5);
+    headerRange.setFontWeight('bold');
+    headerRange.setBackground('#4CAF50');  // 緑色（人員管理用）
+    headerRange.setFontColor('#ffffff');
+    headerRange.setHorizontalAlignment('center');
+
+    // ヘッダー行を固定
+    sheet.setFrozenRows(1);
+    sheet.setFrozenColumns(2);  // 学号と姓名を固定
+
+    // 列幅を調整
+    sheet.setColumnWidth(1, 100);  // A列: 学号
+    sheet.setColumnWidth(2, 120);  // B列: 姓名
+    sheet.setColumnWidth(3, 100);  // C列: グループ1
+    sheet.setColumnWidth(4, 100);  // D列: グループ2
+    sheet.setColumnWidth(5, 100);  // E列: グループ3
+
+    // サンプルデータを追加
+    sheet.getRange(2, 1, 4, 5).setValues([
+      ['2151001', '張三', '✓', '✓', ''],
+      ['2151002', '李四', '✓', '✓', '✓'],
+      ['2251003', '王五', '✓', '', ''],
+      ['2251004', '趙六', '', '✓', '✓']
+    ]);
+
+    // A列とB列のデータ検証（空白不可）
+    var notEmptyRule = SpreadsheetApp.newDataValidation()
+      .requireTextIsUrl()  // これは使えないので、カスタム検証は手動で
+      .build();
+
+    Logger.log('✅ 人員管理表初期化完了！');
+    Logger.log('シート名: ' + MEMBER_SHEET_NAME);
+
+    Browser.msgBox(
+      '初期化完了',
+      '人員管理表「' + MEMBER_SHEET_NAME + '」を初期化しました！\\n\\n' +
+      'C列以降のグループ名は自由にカスタマイズできます。\\n' +
+      'グループに所属する場合は「✓」を入力してください。',
+      Browser.Buttons.OK
+    );
+
+    return {
+      success: true,
+      message: '人員管理表を初期化しました',
+      sheetUrl: ss.getUrl()
+    };
+
+  } catch (error) {
+    Logger.log('❌ 人員管理表初期化エラー: ' + error.toString());
+    Browser.msgBox(
+      'エラー',
+      '人員管理表の初期化に失敗しました:\\n' + error.toString(),
+      Browser.Buttons.OK
+    );
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * 人員管理表を取得
+ */
+function getMemberSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(MEMBER_SHEET_NAME);
+
+  if (!sheet) {
+    throw new Error('人員管理表が見つかりません。initializeMemberSheet()を実行してください。');
+  }
+
+  return sheet;
+}
+
+/**
+ * すべてのグループ名を取得（C列以降の列名）
+ */
+function getGroupNames() {
+  try {
+    var sheet = getMemberSheet();
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    // A列（学号）とB列（姓名）を除外、C列以降がグループ
+    var groups = [];
+    for (var i = 2; i < headers.length; i++) {
+      if (headers[i]) {
+        groups.push(headers[i]);
+      }
+    }
+
+    return {
+      success: true,
+      groups: groups
+    };
+  } catch (error) {
+    Logger.log('getGroupNamesエラー: ' + error.toString());
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * 指定グループの学号リストを取得
+ */
+function getStudentIdsByGroup(groupName) {
+  try {
+    var sheet = getMemberSheet();
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+
+    // グループ列を探す
+    var groupColIndex = -1;
+    for (var i = 2; i < headers.length; i++) {
+      if (headers[i] === groupName) {
+        groupColIndex = i;
+        break;
+      }
+    }
+
+    if (groupColIndex === -1) {
+      throw new Error('グループ「' + groupName + '」が見つかりません');
+    }
+
+    // 該当グループの学号を収集
+    var studentIds = [];
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (row[groupColIndex]) {  // マークがあれば
+        studentIds.push(String(row[0]));  // A列の学号を文字列として追加
+      }
+    }
+
+    return studentIds;
+  } catch (error) {
+    Logger.log('getStudentIdsByGroupエラー: ' + error.toString());
+    return [];
+  }
+}
+
+/**
+ * 学号から姓名を取得
+ */
+function getNameByStudentId(studentId) {
+  try {
+    var sheet = getMemberSheet();
+    var data = sheet.getDataRange().getValues();
+
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]) == String(studentId)) {  // A列が学号
+        return data[i][1];  // B列が姓名
+      }
+    }
+
+    return studentId;  // 見つからない場合は学号を返す
+  } catch (error) {
+    Logger.log('getNameByStudentIdエラー: ' + error.toString());
+    return studentId;
+  }
 }

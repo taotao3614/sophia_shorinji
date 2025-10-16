@@ -386,11 +386,14 @@
             <input type="date" class="form-input" id="vote-deadline">
           </div>
 
-          <!-- 🆕 応答対象者リスト -->
+          <!-- 🆕 対象グループ選択 -->
           <div class="form-group">
-            <label class="form-label">応答対象者リスト（1行1名）<span style="color: var(--accent-red);">*</span></label>
-            <textarea class="form-textarea target-members-input" id="target-members" placeholder="張三&#10;李四&#10;王五&#10;趙六" required></textarea>
-            <div class="help-text">※この名簿と回答者を比較して、未回答者を表示します</div>
+            <label class="form-label">対象グループ <span style="color: var(--accent-red);">*</span></label>
+            <select class="form-input" id="target-group" required>
+              <option value="">-- グループを選択してください --</option>
+              <!-- 動的にグループオプションが追加されます -->
+            </select>
+            <div class="help-text">※人員管理表で定義されたグループから選択してください</div>
           </div>
         </form>
       </div>
@@ -458,7 +461,9 @@
 
         // ログイン状態をチェック
         if (!liff.isLoggedIn()) {
-          liff.login();
+          liff.login({
+            redirectUri: window.location.href  // ログイン後、現在のページに戻る
+          });
           return;
         }
 
@@ -485,6 +490,9 @@
 
         // 投票リストを読み込み
         await loadVotes();
+
+        // 🆕 グループリストを読み込み
+        await loadGroupNames();
 
         // イベントリスナー設定
         setupEventListeners();
@@ -574,6 +582,42 @@
         document.getElementById('active-votes-container').innerHTML =
           '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">読み込みに失敗しました</div></div>';
         document.getElementById('expired-votes-container').innerHTML = '';
+      }
+    }
+
+    /**
+     * 🆕 グループリストを読み込み
+     */
+    async function loadGroupNames() {
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'getGroupNames'
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error || 'グループリストの取得に失敗しました');
+        }
+
+        // 下拉選択框にオプションを追加
+        const selectElement = document.getElementById('target-group');
+        result.groups.forEach(group => {
+          const option = document.createElement('option');
+          option.value = group;
+          option.textContent = group;
+          selectElement.appendChild(option);
+        });
+
+      } catch (error) {
+        console.error('グループリスト取得エラー:', error);
+        showAlert('グループリストの取得に失敗しました: ' + error.message, 'error');
       }
     }
 
@@ -682,19 +726,13 @@
         const title = document.getElementById('vote-title').value.trim();
         const description = document.getElementById('vote-description').value.trim();
         const deadline = document.getElementById('vote-deadline').value;
-        const targetMembersText = document.getElementById('target-members').value.trim();
+        const targetGroup = document.getElementById('target-group').value;  // 🆕 グループを取得
 
         // 選択肢を取得
         const optionInputs = document.querySelectorAll('.option-input');
         const options = Array.from(optionInputs)
           .map(input => input.value.trim())
           .filter(val => val !== '');
-
-        // 応答対象者を配列に変換
-        const targetMembers = targetMembersText
-          .split('\n')
-          .map(s => s.trim())
-          .filter(s => s);
 
         // バリデーション
         if (!title) {
@@ -707,8 +745,8 @@
           return;
         }
 
-        if (targetMembers.length === 0) {
-          showAlert('応答対象者を1名以上入力してください', 'warning');
+        if (!targetGroup) {  // 🆕 グループ必須チェック
+          showAlert('対象グループを選択してください', 'warning');
           return;
         }
 
@@ -730,7 +768,7 @@
             description: description,
             options: options,
             deadline: deadline,
-            targetMembers: targetMembers
+            targetGroup: targetGroup  // 🆕 グループ名を送信
           })
         });
 
