@@ -707,6 +707,9 @@
     const VOTES_CACHE_KEY = 'votes_cache';
     const CACHE_DURATION = 5 * 60 * 1000;  // 5分
 
+    // 🐛 デバッグ：キャッシュを有効化するかどうか（開発時は false、本番は true）
+    const ENABLE_CACHE = true;  // ⚠️ デバッグ時は false に変更してください
+
     // 🆕 防抖設定（問題追加ボタン用）
     let isAddingQuestion = false;
 
@@ -805,8 +808,11 @@
      */
     async function loadVotes(forceRefresh = false) {
       try {
-        // 1️⃣ キャッシュをチェック
-        if (!forceRefresh) {
+        // 🐛 デバッグ：キャッシュ設定をチェック
+        const cacheEnabled = ENABLE_CACHE;
+
+        // 1️⃣ キャッシュをチェック（キャッシュが有効な場合のみ）
+        if (!forceRefresh && cacheEnabled) {
           const cached = localStorage.getItem(VOTES_CACHE_KEY);
           if (cached) {
             try {
@@ -829,6 +835,8 @@
               console.warn('キャッシュの解析に失敗:', e);
             }
           }
+        } else if (!cacheEnabled) {
+          console.log('🚫 キャッシュが無効化されています - 常に最新データを取得');
         }
 
         // 2️⃣ GAS API を呼び出し
