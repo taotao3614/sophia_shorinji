@@ -133,7 +133,7 @@ function getMasterSheet() {
  */
 function createVote(params) {
   try {
-    const { title, description, questionType, options, deadline, targetGroup } = params;  // 🆕 questionType
+    const { title, description, questions, deadline, targetGroup } = params;  // 🆕 questions
 
     // バリデーション
     if (!title) {
@@ -143,19 +143,10 @@ function createVote(params) {
       };
     }
 
-    if (!questionType) {
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
       return {
         success: false,
-        error: '問題タイプを選択してください'
-      };
-    }
-
-    // radio/checkbox の場合は選択肢が必要
-    if ((questionType === 'radio' || questionType === 'checkbox') &&
-        (!options || !Array.isArray(options) || options.length < 2)) {
-      return {
-        success: false,
-        error: '選択肢を2つ以上入力してください'
+        error: '問題を追加してください'
       };
     }
 
@@ -179,49 +170,72 @@ function createVote(params) {
       form.setDescription(formDescription);
     }
 
-    // 【重要】学号フィールドを最初に追加（必須）🆕
-    form.addTextItem()
-      .setTitle('学号（必須）')
-      .setHelpText('※正確な学号を入力してください（例：2151001）')
-      .setRequired(true);
+    // 🆕 複数の問題をループで追加
+    for (var i = 0; i < questions.length; i++) {
+      var question = questions[i];
+      var qType = question.type;
+      var qTitle = question.title || '';
+      var qRequired = question.required !== false;  // デフォルトは必須
+      var qOptions = question.options || [];
 
-    // 🆕 問題タイプに応じて質問を追加
-    switch(questionType) {
-      case 'radio':  // 単一選択（ラジオボタン）
-        const radioItem = form.addMultipleChoiceItem();
-        radioItem.setTitle('選択してください（1つ選択）');
-        radioItem.setChoiceValues(options);
-        radioItem.setRequired(true);
-        Logger.log('単一選択（ラジオボタン）を追加');
-        break;
+      Logger.log('問題 ' + (i + 1) + ' を追加: ' + qTitle + ' (type: ' + qType + ')');
 
-      case 'checkbox':  // 複数選択（チェックボックス）
-        const checkboxItem = form.addCheckboxItem();
-        checkboxItem.setTitle('選択してください（複数選択可）');
-        checkboxItem.setChoiceValues(options);
-        checkboxItem.setRequired(true);
-        Logger.log('複数選択（チェックボックス）を追加');
-        break;
+      // 問題タイプに応じて質問を追加
+      switch(qType) {
+        case 'text':  // 短答式（1行）
+          var textItem = form.addTextItem();
+          textItem.setTitle(qTitle);
+          if (question.helpText) {
+            textItem.setHelpText(question.helpText);
+          }
+          textItem.setRequired(qRequired);
+          break;
 
-      case 'text':  // 短答式（1行）
-        const textItem = form.addTextItem();
-        textItem.setTitle('回答を記入してください');
-        textItem.setRequired(true);
-        Logger.log('短答式（1行）を追加');
-        break;
+        case 'paragraph':  // 長答式（段落）
+          var paragraphItem = form.addParagraphTextItem();
+          paragraphItem.setTitle(qTitle);
+          if (question.helpText) {
+            paragraphItem.setHelpText(question.helpText);
+          }
+          paragraphItem.setRequired(qRequired);
+          break;
 
-      case 'paragraph':  // 長答式（段落）
-        const paragraphItem = form.addParagraphTextItem();
-        paragraphItem.setTitle('回答を記入してください');
-        paragraphItem.setRequired(true);
-        Logger.log('長答式（段落）を追加');
-        break;
+        case 'radio':  // 単一選択（ラジオボタン）
+          if (qOptions.length < 2) {
+            return {
+              success: false,
+              error: '問題 "' + qTitle + '" の選択肢を2つ以上入力してください'
+            };
+          }
+          var radioItem = form.addMultipleChoiceItem();
+          radioItem.setTitle(qTitle);
+          if (question.helpText) {
+            radioItem.setHelpText(question.helpText);
+          }
+          radioItem.setChoiceValues(qOptions);
+          radioItem.setRequired(qRequired);
+          break;
 
-      default:
-        return {
-          success: false,
-          error: '不明な問題タイプです: ' + questionType
-        };
+        case 'checkbox':  // 複数選択（チェックボックス）
+          if (qOptions.length < 2) {
+            return {
+              success: false,
+              error: '問題 "' + qTitle + '" の選択肢を2つ以上入力してください'
+            };
+          }
+          var checkboxItem = form.addCheckboxItem();
+          checkboxItem.setTitle(qTitle);
+          if (question.helpText) {
+            checkboxItem.setHelpText(question.helpText);
+          }
+          checkboxItem.setChoiceValues(qOptions);
+          checkboxItem.setRequired(qRequired);
+          break;
+
+        default:
+          Logger.log('警告: 不明な問題タイプ: ' + qType);
+          // スキップして続行
+      }
     }
 
     // フォーム設定

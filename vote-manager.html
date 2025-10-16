@@ -825,19 +825,248 @@
       // 既にボタンにonclickがあるので、カード全体のクリックは不要
     }
 
-    /**
-     * 🆕 問題タイプ変更時の処理
-     */
-    function handleQuestionTypeChange() {
-      const questionType = document.getElementById('question-type').value;
-      const optionsGroup = document.getElementById('options-group');
+    // ========================================
+    // 🆕 問題管理システム
+    // ========================================
 
-      // radio または checkbox の場合のみ選択肢を表示
-      if (questionType === 'radio' || questionType === 'checkbox') {
-        optionsGroup.style.display = 'block';
-      } else {
-        optionsGroup.style.display = 'none';
+    /**
+     * 問題リストを初期化（学号問題を追加）
+     */
+    function initializeQuestions() {
+      questions = [];
+      questionIdCounter = 1;
+
+      // 学号問題を固定で追加（削除不可）
+      questions.push({
+        id: 0,
+        type: 'text',
+        title: '学号（必須）',
+        helpText: '※正確な学号を入力してください（例：2151001）',
+        required: true,
+        fixed: true,  // 固定問題（削除不可）
+        options: []
+      });
+
+      renderQuestions();
+    }
+
+    /**
+     * 問題を追加
+     */
+    function addQuestion() {
+      const newQuestion = {
+        id: questionIdCounter++,
+        type: 'radio',  // デフォルトは単一選択
+        title: '',
+        helpText: '',
+        required: true,
+        fixed: false,
+        options: ['選択肢1', '選択肢2']
+      };
+
+      questions.push(newQuestion);
+      renderQuestions();
+    }
+
+    /**
+     * 問題を削除
+     */
+    function deleteQuestion(questionId) {
+      if (confirm('この問題を削除しますか？')) {
+        questions = questions.filter(q => q.id !== questionId);
+        renderQuestions();
       }
+    }
+
+    /**
+     * 問題タイプを変更
+     */
+    function changeQuestionType(questionId, newType) {
+      const question = questions.find(q => q.id === questionId);
+      if (question) {
+        question.type = newType;
+
+        // text/paragraph の場合は選択肢をクリア
+        if (newType === 'text' || newType === 'paragraph') {
+          question.options = [];
+        } else if (question.options.length === 0) {
+          // radio/checkbox で選択肢がない場合は初期化
+          question.options = ['選択肢1', '選択肢2'];
+        }
+
+        renderQuestions();
+      }
+    }
+
+    /**
+     * 問題の必須/任意を切り替え
+     */
+    function toggleRequired(questionId) {
+      const question = questions.find(q => q.id === questionId);
+      if (question && !question.fixed) {  // 学号は変更不可
+        question.required = !question.required;
+        renderQuestions();
+      }
+    }
+
+    /**
+     * 問題タイトルを更新
+     */
+    function updateQuestionTitle(questionId, newTitle) {
+      const question = questions.find(q => q.id === questionId);
+      if (question) {
+        question.title = newTitle;
+      }
+    }
+
+    /**
+     * 選択肢を追加
+     */
+    function addOption(questionId) {
+      const question = questions.find(q => q.id === questionId);
+      if (question) {
+        const optionNumber = question.options.length + 1;
+        question.options.push('選択肢' + optionNumber);
+        renderQuestions();
+      }
+    }
+
+    /**
+     * 選択肢を削除
+     */
+    function deleteOption(questionId, optionIndex) {
+      const question = questions.find(q => q.id === questionId);
+      if (question && question.options.length > 2) {  // 最低2つは必要
+        question.options.splice(optionIndex, 1);
+        renderQuestions();
+      } else {
+        showAlert('選択肢は最低2つ必要です', 'warning');
+      }
+    }
+
+    /**
+     * 選択肢を更新
+     */
+    function updateOption(questionId, optionIndex, newValue) {
+      const question = questions.find(q => q.id === questionId);
+      if (question) {
+        question.options[optionIndex] = newValue;
+      }
+    }
+
+    /**
+     * 問題リストをレンダリング
+     */
+    function renderQuestions() {
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
+
+      questions.forEach((question, index) => {
+        const card = createQuestionCard(question, index);
+        container.appendChild(card);
+      });
+    }
+
+    /**
+     * 問題カードを作成
+     */
+    function createQuestionCard(question, index) {
+      const card = document.createElement('div');
+      card.className = 'question-card' + (question.fixed ? ' fixed' : '');
+      card.dataset.questionId = question.id;
+
+      // 問題番号
+      const questionNumber = index + 1;
+
+      // 必須/任意バッジ
+      const requiredBadge = question.required
+        ? '<span class="required-badge">必須</span>'
+        : '<span class="optional-badge">任意</span>';
+
+      // 選択肢HTML（radio/checkbox の場合のみ）
+      let optionsHtml = '';
+      if (question.type === 'radio' || question.type === 'checkbox') {
+        optionsHtml = `
+          <div style="margin-top: 12px;">
+            <label class="form-label" style="font-size: 0.9rem;">選択肢</label>
+            ${question.options.map((option, optIndex) => `
+              <div class="option-input-wrapper">
+                <input
+                  type="text"
+                  class="form-input"
+                  value="${escapeHtml(option)}"
+                  placeholder="選択肢${optIndex + 1}"
+                  onchange="updateOption(${question.id}, ${optIndex}, this.value)"
+                  ${question.fixed ? 'disabled' : ''}
+                >
+                ${!question.fixed && question.options.length > 2 ? `
+                  <button type="button" class="btn-remove-option" onclick="deleteOption(${question.id}, ${optIndex})">
+                    削除
+                  </button>
+                ` : ''}
+              </div>
+            `).join('')}
+            ${!question.fixed ? `
+              <button type="button" class="btn-add-option" onclick="addOption(${question.id})">
+                + 選択肢を追加
+              </button>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      card.innerHTML = `
+        <div class="question-card-header">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span class="question-number">${questionNumber}</span>
+            ${requiredBadge}
+            ${question.fixed ? '<span style="color: #4CAF50; font-size: 0.85rem;">📌 固定項目</span>' : ''}
+          </div>
+          ${!question.fixed ? `
+            <div class="question-actions">
+              <button type="button" class="btn-icon" onclick="toggleRequired(${question.id})" title="必須/任意を切り替え">
+                ${question.required ? '✓' : '○'}
+              </button>
+              <button type="button" class="btn-icon delete" onclick="deleteQuestion(${question.id})" title="削除">
+                🗑️
+              </button>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 0.9rem;">問題タイトル</label>
+          <input
+            type="text"
+            class="form-input"
+            value="${escapeHtml(question.title)}"
+            placeholder="問題のタイトルを入力"
+            onchange="updateQuestionTitle(${question.id}, this.value)"
+            ${question.fixed ? 'disabled' : ''}
+          >
+          ${question.helpText ? `
+            <div class="help-text">${escapeHtml(question.helpText)}</div>
+          ` : ''}
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 0.9rem;">問題タイプ</label>
+          <select
+            class="form-input"
+            onchange="changeQuestionType(${question.id}, this.value)"
+            ${question.fixed ? 'disabled' : ''}
+          >
+            <option value="radio" ${question.type === 'radio' ? 'selected' : ''}>単一選択（ラジオボタン）</option>
+            <option value="checkbox" ${question.type === 'checkbox' ? 'selected' : ''}>複数選択（チェックボックス）</option>
+            <option value="text" ${question.type === 'text' ? 'selected' : ''}>短答式（1行）</option>
+            <option value="paragraph" ${question.type === 'paragraph' ? 'selected' : ''}>長答式（段落）</option>
+          </select>
+        </div>
+
+        ${optionsHtml}
+      `;
+
+      return card;
     }
 
     /**
@@ -850,25 +1079,10 @@
         const description = document.getElementById('vote-description').value.trim();
         const deadline = document.getElementById('vote-deadline').value;
         const targetGroup = document.getElementById('target-group').value;
-        const questionType = document.getElementById('question-type').value;  // 🆕 問題タイプ
-
-        // 選択肢を取得（radio または checkbox の場合のみ）
-        let options = [];
-        if (questionType === 'radio' || questionType === 'checkbox') {
-          const optionInputs = document.querySelectorAll('.option-input');
-          options = Array.from(optionInputs)
-            .map(input => input.value.trim())
-            .filter(val => val !== '');
-        }
 
         // バリデーション
         if (!title) {
           showAlert('投票タイトルを入力してください', 'warning');
-          return;
-        }
-
-        if ((questionType === 'radio' || questionType === 'checkbox') && options.length < 2) {
-          showAlert('選択肢を2つ以上入力してください', 'warning');
           return;
         }
 
@@ -877,18 +1091,40 @@
           return;
         }
 
+        // 🆕 問題リストのバリデーション
+        if (questions.length === 1) {  // 学号のみ
+          showAlert('最低1つの問題を追加してください', 'warning');
+          return;
+        }
+
+        // 各問題のバリデーション
+        for (let i = 0; i < questions.length; i++) {
+          const q = questions[i];
+
+          // 固定問題（学号）以外の問題タイトルチェック
+          if (!q.fixed && !q.title.trim()) {
+            showAlert(`問題 ${i + 1} のタイトルを入力してください`, 'warning');
+            return;
+          }
+
+          // radio/checkbox の選択肢チェック
+          if ((q.type === 'radio' || q.type === 'checkbox') && q.options.length < 2) {
+            showAlert(`問題 ${i + 1} の選択肢を2つ以上入力してください`, 'warning');
+            return;
+          }
+        }
+
         // ローディング表示
         showLoading();
         const btnSubmit = document.getElementById('btn-submit-create');
         btnSubmit.disabled = true;
         btnSubmit.textContent = '作成中...';
 
-        // GASに送信（callGAS を使用）
+        // 🆕 問題リストを送信
         const result = await callGAS('createVote', {
           title: title,
           description: description,
-          questionType: questionType,  // 🆕 問題タイプ
-          options: options,  // radio/checkbox の場合のみ有効
+          questions: questions,  // 🆕 問題リスト全体を送信
           deadline: deadline,
           targetGroup: targetGroup
         });
