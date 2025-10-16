@@ -78,18 +78,36 @@ function isInLineApp() {
  */
 async function callGAS(action, params = {}) {
   try {
+    console.log('🔗 GAS API 呼び出し:', action, params);
+    console.log('📍 GAS URL:', LIFF_CONFIG.gasUrl);
+
+    const requestBody = {
+      action: action,
+      ...params
+    };
+
+    console.log('📤 Request body:', JSON.stringify(requestBody));
+
     const response = await fetch(LIFF_CONFIG.gasUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action: action,
-        ...params
-      })
+      body: JSON.stringify(requestBody),
+      redirect: 'follow'  // GAS のリダイレクトを追跡
     });
 
-    const result = await response.json();
+    console.log('📡 Response status:', response.status);
+    console.log('📡 Response headers:', response.headers);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Response error:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+    }
+
+    const responseText = await response.text();
+    console.log('📥 Response text:', responseText.substring(0, 200));
+
+    const result = JSON.parse(responseText);
+    console.log('✅ GAS API 応答:', result);
 
     if (!result.success) {
       throw new Error(result.error || 'APIエラーが発生しました');
@@ -98,7 +116,12 @@ async function callGAS(action, params = {}) {
     return result;
 
   } catch (error) {
-    console.error('GAS API 呼び出しエラー:', error);
+    console.error('❌ GAS API 呼び出しエラー:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 }
