@@ -461,9 +461,8 @@
 
         // ログイン状態をチェック
         if (!liff.isLoggedIn()) {
-          liff.login({
-            redirectUri: window.location.href  // ログイン後、現在のページに戻る
-          });
+          // redirectUri を指定しない場合、LIFF Endpoint URL が使用される
+          liff.login();
           return;
         }
 
