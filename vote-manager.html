@@ -451,6 +451,7 @@
     // LIFF_CONFIG.liffId, LIFF_CONFIG.gasUrl が利用可能
 
     let currentVoteData = null;  // 作成した投票データを保存
+    let groupNamesCache = null;  // 🚀 グループ名のキャッシュ
 
     /**
      * ページ初期化
@@ -471,8 +472,7 @@
         // 投票リストを読み込み
         await loadVotes();
 
-        // 🆕 グループリストを読み込み
-        await loadGroupNames();
+        // 🚀 グループリストは遅延ロード（モーダルを開く時に読み込む）
 
         // イベントリスナー設定
         setupEventListeners();
@@ -496,9 +496,11 @@
       const btnAddOption = document.getElementById('btn-add-option');
       const closeBtn = document.querySelector('.close');
 
-      // モーダルを開く
-      btnCreate.addEventListener('click', () => {
+      // モーダルを開く（🚀 グループリストを遅延ロード）
+      btnCreate.addEventListener('click', async () => {
         modal.style.display = 'block';
+        // モーダルを開いた時にグループリストを読み込む
+        await loadGroupNames();
       });
 
       // モーダルを閉じる
@@ -553,26 +555,51 @@
     }
 
     /**
-     * 🆕 グループリストを読み込み
+     * 🚀 グループリストを読み込み（遅延ロード + キャッシュ）
      */
     async function loadGroupNames() {
       try {
+        // キャッシュがあれば再利用
+        if (groupNamesCache) {
+          console.log('✅ グループリストをキャッシュから取得');
+          populateGroupSelect(groupNamesCache);
+          return;
+        }
+
+        console.log('🔄 グループリストを取得中...');
         // callGAS を使用（common.js）
         const result = await callGAS('getGroupNames');
 
-        // 下拉選択框にオプションを追加
-        const selectElement = document.getElementById('target-group');
-        result.groups.forEach(group => {
-          const option = document.createElement('option');
-          option.value = group;
-          option.textContent = group;
-          selectElement.appendChild(option);
-        });
+        // キャッシュに保存
+        groupNamesCache = result.groups;
+        console.log('✅ グループリストを取得しキャッシュしました:', groupNamesCache);
+
+        // 選択框に追加
+        populateGroupSelect(groupNamesCache);
 
       } catch (error) {
         console.error('グループリスト取得エラー:', error);
         showAlert('グループリストの取得に失敗しました: ' + error.message, 'error');
       }
+    }
+
+    /**
+     * グループ選択框にオプションを追加
+     */
+    function populateGroupSelect(groups) {
+      const selectElement = document.getElementById('target-group');
+      // 既存のオプションをクリア（最初の「選択してください」以外）
+      while (selectElement.options.length > 1) {
+        selectElement.remove(1);
+      }
+
+      // 新しいオプションを追加
+      groups.forEach(group => {
+        const option = document.createElement('option');
+        option.value = group;
+        option.textContent = group;
+        selectElement.appendChild(option);
+      });
     }
 
     /**
