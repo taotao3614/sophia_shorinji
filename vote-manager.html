@@ -614,10 +614,30 @@
 
           <hr style="margin: 24px 0; border: none; border-top: 2px solid #e0e0e0;">
 
+          <!-- 🆕 学号フィールド（固定） -->
+          <div class="form-group" style="background: #f0f8ff; padding: 16px; border-radius: 8px; border: 2px solid #4CAF50;">
+            <label class="form-label" style="font-size: 1rem; color: #4CAF50;">
+              📌 固定項目：学号（必須）
+            </label>
+            <div class="help-text" style="margin-top: 4px; margin-bottom: 12px;">
+              ※この項目はGoogle Formの最初の質問として自動的に追加されます
+            </div>
+            <input
+              type="text"
+              class="form-input"
+              value="学号（必須）"
+              disabled
+              style="background: #e8f5e9; cursor: not-allowed;"
+            >
+            <div class="help-text" style="margin-top: 4px;">
+              質問タイプ: 短答式（1行） | 正確な学号を入力してください（例：A0123456）
+            </div>
+          </div>
+
           <!-- 🆕 問題リスト -->
-          <div style="margin-bottom: 16px;">
-            <label class="form-label" style="font-size: 1.1rem; color: var(--accent-red);">📝 問題リスト</label>
-            <div class="help-text">※学号は固定で最初に追加されます</div>
+          <div style="margin: 24px 0 16px 0;">
+            <label class="form-label" style="font-size: 1.1rem; color: var(--accent-red);">📝 追加の問題</label>
+            <div class="help-text">学号以外に追加したい質問をここで作成してください</div>
           </div>
 
           <div class="questions-container" id="questions-container">
@@ -1025,29 +1045,19 @@
      * 問題リストを初期化（学号問題を追加）
      */
     function initializeQuestions() {
-      // 🐛 修正：既に初期化されている場合はスキップ
+      // 🐛 修正：既に問題がある場合は再描画のみ
       if (questions.length > 0) {
-        console.log('⚠️ 問題リストは既に初期化されています。スキップします。');
-        renderQuestions();  // 既存の問題を再描画するだけ
+        console.log('⚠️ 問題リストは既に存在します。再描画します。');
+        renderQuestions();
         return;
       }
 
+      // 🆕 学号は表単フィールドになったため、問題リストは空で初期化
       questions = [];
       questionIdCounter = 1;
 
-      // 学号問題を固定で追加（削除不可）
-      questions.push({
-        id: 0,
-        type: 'text',
-        title: '学号（必須）',
-        helpText: '※正確な学号を入力してください（例：A0123456）',
-        required: true,
-        fixed: true,  // 固定問題（削除不可）
-        options: []
-      });
-
-      console.log('✅ 問題リストを初期化しました（学号問題を追加）');
-      renderQuestions();
+      console.log('✅ 問題リストを初期化しました（空）');
+      renderQuestions();  // 空のコンテナを描画
     }
 
     /**
@@ -1333,8 +1343,8 @@
           return;
         }
 
-        // 🆕 問題リストのバリデーション
-        if (questions.length === 1) {  // 学号のみ
+        // 🆕 問題リストのバリデーション（学号は表单フィールドなので、ここでは追加問題のみチェック）
+        if (questions.length === 0) {
           showAlert('最低1つの問題を追加してください', 'warning');
           return;
         }
@@ -1343,8 +1353,8 @@
         for (let i = 0; i < questions.length; i++) {
           const q = questions[i];
 
-          // 固定問題（学号）以外の問題タイトルチェック
-          if (!q.fixed && !q.title.trim()) {
+          // 問題タイトルチェック
+          if (!q.title.trim()) {
             showAlert(`問題 ${i + 1} のタイトルを入力してください`, 'warning');
             return;
           }
@@ -1362,11 +1372,25 @@
         btnSubmit.disabled = true;
         btnSubmit.textContent = '作成中...';
 
+        // 🆕 学号問題を最前面に追加してから送信
+        const questionsWithStudentId = [
+          {
+            id: 0,
+            type: 'text',
+            title: '学号（必須）',
+            helpText: '※正確な学号を入力してください（例：A0123456）',
+            required: true,
+            fixed: true,
+            options: []
+          },
+          ...questions  // ユーザーが追加した問題
+        ];
+
         // 🆕 問題リストを送信
         const result = await callGAS('createVote', {
           title: title,
           description: description,
-          questions: questions,  // 🆕 問題リスト全体を送信
+          questions: questionsWithStudentId,  // 🆕 学号 + 追加問題
           deadline: deadline,
           targetGroup: targetGroup
         });
