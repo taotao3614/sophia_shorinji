@@ -228,11 +228,82 @@
       opacity: 1;
     }
 
+    /* 🆕 問題カードスタイル */
+    .question-card {
+      background: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
+    }
+
+    .question-card:hover {
+      border-color: var(--accent-red);
+      box-shadow: 0 2px 8px rgba(184, 40, 45, 0.1);
+    }
+
+    .question-card.fixed {
+      background: #f9f9f9;
+      border-color: #4CAF50;
+    }
+
+    .question-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .question-number {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      background: var(--accent-red);
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 28px;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    .question-card.fixed .question-number {
+      background: #4CAF50;
+    }
+
+    .question-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-icon {
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      background: #f5f5f5;
+      border-color: #999;
+    }
+
+    .btn-icon.delete:hover {
+      background: #ffebee;
+      border-color: var(--error-color);
+      color: var(--error-color);
+    }
+
     /* オプション入力スタイル */
     .option-input-wrapper {
       display: flex;
       gap: 8px;
       margin-bottom: 8px;
+      align-items: center;
     }
 
     .option-input-wrapper input {
@@ -240,13 +311,13 @@
     }
 
     .btn-remove-option {
-      padding: 8px 16px;
+      padding: 6px 12px;
       background-color: var(--error-color);
       color: var(--bg-white);
       border: none;
       border-radius: 2px;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
 
     .btn-add-option {
@@ -259,6 +330,64 @@
       font-size: 0.9rem;
       width: 100%;
       margin-top: 8px;
+    }
+
+    .btn-add-question {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: white;
+      border: 2px dashed var(--accent-red);
+      border-radius: 8px;
+      color: var(--accent-red);
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: all 0.2s;
+    }
+
+    .btn-add-question:hover {
+      background: #fff5f5;
+      border-color: #9a1f24;
+    }
+
+    .required-badge {
+      display: inline-block;
+      background: var(--error-color);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-left: 8px;
+    }
+
+    .optional-badge {
+      display: inline-block;
+      background: #999;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-left: 8px;
+    }
+
+    .questions-container {
+      max-height: 500px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    .questions-container::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .questions-container::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 4px;
+    }
+
+    .questions-container::-webkit-scrollbar-thumb:hover {
+      background: #999;
     }
 
     /* 🆕 応答対象者入力 */
@@ -362,6 +491,7 @@
       </div>
       <div class="modal-body">
         <form id="create-vote-form">
+          <!-- Form 基本情報 -->
           <div class="form-group">
             <label class="form-label">投票タイトル <span style="color: var(--accent-red);">*</span></label>
             <input type="text" class="form-input" id="vote-title" placeholder="例: 2月合宿の参加調査" required>
@@ -369,33 +499,7 @@
 
           <div class="form-group">
             <label class="form-label">投票説明</label>
-            <textarea class="form-textarea" id="vote-description" placeholder="投票の目的や詳細を記入してください"></textarea>
-          </div>
-
-          <!-- 🆕 問題タイプ選択 -->
-          <div class="form-group">
-            <label class="form-label">問題タイプ <span style="color: var(--accent-red);">*</span></label>
-            <select class="form-input" id="question-type" required>
-              <option value="radio">単一選択（ラジオボタン）</option>
-              <option value="checkbox">複数選択（チェックボックス）</option>
-              <option value="text">短答式（1行）</option>
-              <option value="paragraph">長答式（段落）</option>
-            </select>
-            <div class="help-text">※Google Formの問題タイプに対応</div>
-          </div>
-
-          <!-- 選択肢（問題タイプが radio または checkbox の場合のみ表示） -->
-          <div class="form-group" id="options-group">
-            <label class="form-label">選択肢 <span style="color: var(--accent-red);">*</span></label>
-            <div id="options-container">
-              <div class="option-input-wrapper">
-                <input type="text" class="form-input option-input" placeholder="選択肢1" required>
-              </div>
-              <div class="option-input-wrapper">
-                <input type="text" class="form-input option-input" placeholder="選択肢2" required>
-              </div>
-            </div>
-            <button type="button" class="btn-add-option" id="btn-add-option">+ 選択肢を追加</button>
+            <textarea class="form-textarea" id="vote-description" placeholder="投票の目的や詳細を記入してください" rows="3"></textarea>
           </div>
 
           <div class="form-group">
@@ -403,15 +507,29 @@
             <input type="date" class="form-input" id="vote-deadline">
           </div>
 
-          <!-- 🆕 対象グループ選択 -->
           <div class="form-group">
             <label class="form-label">対象グループ <span style="color: var(--accent-red);">*</span></label>
             <select class="form-input" id="target-group" required>
               <option value="">-- グループを選択してください --</option>
-              <!-- 動的にグループオプションが追加されます -->
             </select>
-            <div class="help-text">※人員管理表で定義されたグループから選択してください</div>
+            <div class="help-text">※人員管理表で定義されたグループから選択</div>
           </div>
+
+          <hr style="margin: 24px 0; border: none; border-top: 2px solid #e0e0e0;">
+
+          <!-- 🆕 問題リスト -->
+          <div style="margin-bottom: 16px;">
+            <label class="form-label" style="font-size: 1.1rem; color: var(--accent-red);">📝 問題リスト</label>
+            <div class="help-text">※学号は固定で最初に追加されます</div>
+          </div>
+
+          <div class="questions-container" id="questions-container">
+            <!-- 問題カードが動的に追加されます -->
+          </div>
+
+          <button type="button" class="btn-add-question" id="btn-add-question">
+            ➕ 問題を追加
+          </button>
         </form>
       </div>
       <div class="modal-footer">
@@ -465,6 +583,8 @@
 
     let currentVoteData = null;  // 作成した投票データを保存
     let groupNamesCache = null;  // 🚀 グループ名のキャッシュ
+    let questions = [];  // 🆕 問題リスト
+    let questionIdCounter = 1;  // 🆕 問題IDカウンター
 
     /**
      * ページ初期化
@@ -514,6 +634,8 @@
         modal.style.display = 'block';
         // モーダルを開いた時にグループリストを読み込む
         await loadGroupNames();
+        // 問題リストを初期化
+        initializeQuestions();
       });
 
       // モーダルを閉じる
@@ -533,11 +655,8 @@
         }
       });
 
-      // 選択肢を追加
-      btnAddOption.addEventListener('click', addOptionInput);
-
-      // 🆕 問題タイプ変更時に選択肢表示を切り替え
-      document.getElementById('question-type').addEventListener('change', handleQuestionTypeChange);
+      // 🆕 問題を追加
+      document.getElementById('btn-add-question').addEventListener('click', addQuestion);
 
       // フォーム送信
       btnSubmit.addEventListener('click', handleCreateVote);
