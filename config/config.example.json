@@ -1,6 +1,0 @@
-{
-  "liffId": "YOUR_LIFF_ID_HERE",
-  "channelAccessToken": "YOUR_CHANNEL_ACCESS_TOKEN_HERE",
-  "voteMasterSheetId": "YOUR_VOTE_MASTER_SPREADSHEET_ID",
-  "voteManagerGasUrl": "https://script.google.com/macros/s/YOUR_GAS_DEPLOYMENT_ID/exec"
-}

@@ -440,7 +440,11 @@
 
   <script src="./js/common.js"></script>
   <script>
-    let gasUrl = '';
+    // ===== 設定 =====
+    // TODO: 以下のLIFF IDとGAS URLを実際の値に置き換えてください
+    const LIFF_ID = '2008292404-7kjGRzVn';  // あなたのLIFF ID
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwsGVwXluq1wLtcLxD1G4poINKSg1qKetjbqiG7Rpb5nHslJP1nkhgSUSPrqMOwi1zu/exec';  // あなたのGAS Web App URL
+
     let userProfile = null;
     let currentVoteData = null;  // 作成した投票データを保存
 
@@ -450,16 +454,34 @@
     async function initPage() {
       showLoading();
       try {
-        // LIFF初期化
-        await initializeLiff();
-        userProfile = await getUserProfile();
+        // LIFF初期化（LIFF IDを直接渡す）
+        await liff.init({ liffId: LIFF_ID });
 
-        // 設定を読み込み
-        const config = await loadConfig();
-        gasUrl = config.voteManagerGasUrl;
+        // ログイン状態をチェック
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
 
-        if (!gasUrl) {
-          throw new Error('GAS URLが設定されていません。config.jsonを確認してください。');
+        console.log('LIFF初期化成功');
+
+        // ユーザープロフィール取得
+        try {
+          const profile = await liff.getProfile();
+          userProfile = {
+            userId: profile.userId,
+            displayName: profile.displayName,
+            pictureUrl: profile.pictureUrl,
+            statusMessage: profile.statusMessage
+          };
+        } catch (error) {
+          console.log('プロフィール取得失敗（LIFF外の可能性）');
+          userProfile = {
+            userId: 'dummy_user',
+            displayName: 'テストユーザー',
+            pictureUrl: '',
+            statusMessage: ''
+          };
         }
 
         // 投票リストを読み込み
@@ -528,7 +550,7 @@
      */
     async function loadVotes() {
       try {
-        const response = await fetch(gasUrl, {
+        const response = await fetch(GAS_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -698,7 +720,7 @@
         btnSubmit.textContent = '作成中...';
 
         // GASに送信
-        const response = await fetch(gasUrl, {
+        const response = await fetch(GAS_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
