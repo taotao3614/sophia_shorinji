@@ -64,10 +64,10 @@
     }
 
     .vote-card-title {
-      font-size: 0.95rem;
+      font-size: 1.05rem;
       font-weight: 600;
       color: var(--text-medium);
-      line-height: 1.3;
+      line-height: 1.4;
       flex: 1;
       min-width: 0;
     }
@@ -76,15 +76,16 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 3px;
+      gap: 4px;
       flex-shrink: 0;
+      font-size: 0.8rem;
     }
 
     .vote-card-description {
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       color: var(--text-light);
-      margin-bottom: 6px;
-      line-height: 1.3;
+      margin-bottom: 8px;
+      line-height: 1.4;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       line-clamp: 2;
@@ -167,14 +168,14 @@
     /* 🆕 投票アクションボタン */
     .vote-actions {
       display: flex;
-      gap: 6px;
-      margin-top: 6px;
+      gap: 8px;
+      margin-top: 8px;
     }
 
     .vote-actions .btn {
       flex: 1;
-      padding: 5px 8px;
-      font-size: 0.75rem;
+      padding: 8px 12px;
+      font-size: 0.85rem;
     }
 
     /* モーダルスタイル */
@@ -979,8 +980,8 @@
             <div class="vote-card-title">${escapeHtml(vote.title)}</div>
             <div class="vote-card-info">
               <span class="vote-status ${statusClass}">${statusText}</span>
-              ${targetGroupText ? `<span style="font-size: 0.7rem; color: #888;">${targetGroupText}</span>` : ''}
-              <span style="font-size: 0.7rem; color: #888;">${deadlineText}</span>
+              ${targetGroupText ? `<span style="font-size: 0.8rem; color: #888; white-space: nowrap;">${targetGroupText}</span>` : ''}
+              <span style="font-size: 0.8rem; color: #888; white-space: nowrap;">${deadlineText}</span>
             </div>
           </div>
           ${vote.description ? `<div class="vote-card-description">${escapeHtml(vote.description)}</div>` : ''}
