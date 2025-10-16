@@ -853,12 +853,12 @@ function initializeMemberSheet() {
     sheet.setColumnWidth(4, 100);  // D列: グループ2
     sheet.setColumnWidth(5, 100);  // E列: グループ3
 
-    // サンプルデータを追加
+    // サンプルデータを追加（1=所属、0=非所属）
     sheet.getRange(2, 1, 4, 5).setValues([
-      ['2151001', '張三', '✓', '✓', ''],
-      ['2151002', '李四', '✓', '✓', '✓'],
-      ['2251003', '王五', '✓', '', ''],
-      ['2251004', '趙六', '', '✓', '✓']
+      ['2151001', '張三', 1, 1, 0],
+      ['2151002', '李四', 1, 1, 1],
+      ['2251003', '王五', 1, 0, 0],
+      ['2251004', '趙六', 0, 1, 1]
     ]);
 
     // A列とB列のデータ検証（空白不可）
@@ -873,7 +873,7 @@ function initializeMemberSheet() {
       '初期化完了',
       '人員管理表「' + MEMBER_SHEET_NAME + '」を初期化しました！\\n\\n' +
       'C列以降のグループ名は自由にカスタマイズできます。\\n' +
-      'グループに所属する場合は「✓」を入力してください。',
+      'グループに所属する場合は「1」、非所属は「0」を入力してください。',
       Browser.Buttons.OK
     );
 
@@ -962,11 +962,14 @@ function getStudentIdsByGroup(groupName) {
       throw new Error('グループ「' + groupName + '」が見つかりません');
     }
 
-    // 該当グループの学号を収集
+    // 該当グループの学号を収集（値が 1 の場合のみ）
     var studentIds = [];
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
-      if (row[groupColIndex]) {  // マークがあれば
+      var groupValue = row[groupColIndex];
+
+      // 値が 1 の場合、そのグループに所属している
+      if (groupValue === 1 || groupValue === '1' || groupValue === true) {
         studentIds.push(String(row[0]));  // A列の学号を文字列として追加
       }
     }
