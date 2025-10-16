@@ -372,7 +372,20 @@
             <textarea class="form-textarea" id="vote-description" placeholder="投票の目的や詳細を記入してください"></textarea>
           </div>
 
+          <!-- 🆕 問題タイプ選択 -->
           <div class="form-group">
+            <label class="form-label">問題タイプ <span style="color: var(--accent-red);">*</span></label>
+            <select class="form-input" id="question-type" required>
+              <option value="radio">単一選択（ラジオボタン）</option>
+              <option value="checkbox">複数選択（チェックボックス）</option>
+              <option value="text">短答式（1行）</option>
+              <option value="paragraph">長答式（段落）</option>
+            </select>
+            <div class="help-text">※Google Formの問題タイプに対応</div>
+          </div>
+
+          <!-- 選択肢（問題タイプが radio または checkbox の場合のみ表示） -->
+          <div class="form-group" id="options-group">
             <label class="form-label">選択肢 <span style="color: var(--accent-red);">*</span></label>
             <div id="options-container">
               <div class="option-input-wrapper">
@@ -522,6 +535,9 @@
 
       // 選択肢を追加
       btnAddOption.addEventListener('click', addOptionInput);
+
+      // 🆕 問題タイプ変更時に選択肢表示を切り替え
+      document.getElementById('question-type').addEventListener('change', handleQuestionTypeChange);
 
       // フォーム送信
       btnSubmit.addEventListener('click', handleCreateVote);
@@ -691,6 +707,21 @@
     }
 
     /**
+     * 🆕 問題タイプ変更時の処理
+     */
+    function handleQuestionTypeChange() {
+      const questionType = document.getElementById('question-type').value;
+      const optionsGroup = document.getElementById('options-group');
+
+      // radio または checkbox の場合のみ選択肢を表示
+      if (questionType === 'radio' || questionType === 'checkbox') {
+        optionsGroup.style.display = 'block';
+      } else {
+        optionsGroup.style.display = 'none';
+      }
+    }
+
+    /**
      * 投票作成処理
      */
     async function handleCreateVote() {
@@ -699,13 +730,17 @@
         const title = document.getElementById('vote-title').value.trim();
         const description = document.getElementById('vote-description').value.trim();
         const deadline = document.getElementById('vote-deadline').value;
-        const targetGroup = document.getElementById('target-group').value;  // 🆕 グループを取得
+        const targetGroup = document.getElementById('target-group').value;
+        const questionType = document.getElementById('question-type').value;  // 🆕 問題タイプ
 
-        // 選択肢を取得
-        const optionInputs = document.querySelectorAll('.option-input');
-        const options = Array.from(optionInputs)
-          .map(input => input.value.trim())
-          .filter(val => val !== '');
+        // 選択肢を取得（radio または checkbox の場合のみ）
+        let options = [];
+        if (questionType === 'radio' || questionType === 'checkbox') {
+          const optionInputs = document.querySelectorAll('.option-input');
+          options = Array.from(optionInputs)
+            .map(input => input.value.trim())
+            .filter(val => val !== '');
+        }
 
         // バリデーション
         if (!title) {
@@ -713,12 +748,12 @@
           return;
         }
 
-        if (options.length < 2) {
+        if ((questionType === 'radio' || questionType === 'checkbox') && options.length < 2) {
           showAlert('選択肢を2つ以上入力してください', 'warning');
           return;
         }
 
-        if (!targetGroup) {  // 🆕 グループ必須チェック
+        if (!targetGroup) {
           showAlert('対象グループを選択してください', 'warning');
           return;
         }
@@ -733,9 +768,10 @@
         const result = await callGAS('createVote', {
           title: title,
           description: description,
-          options: options,
+          questionType: questionType,  // 🆕 問題タイプ
+          options: options,  // radio/checkbox の場合のみ有効
           deadline: deadline,
-          targetGroup: targetGroup  // 🆕 グループ名を送信
+          targetGroup: targetGroup
         });
 
         // 成功：データを保存

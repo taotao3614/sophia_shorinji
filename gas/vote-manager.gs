@@ -133,17 +133,33 @@ function getMasterSheet() {
  */
 function createVote(params) {
   try {
-    const { title, description, options, deadline, targetGroup } = params;  // 🆕 targetGroup
+    const { title, description, questionType, options, deadline, targetGroup } = params;  // 🆕 questionType
 
     // バリデーション
-    if (!title || !options || !Array.isArray(options) || options.length === 0) {
+    if (!title) {
       return {
         success: false,
-        error: 'タイトルと選択肢が必要です'
+        error: 'タイトルが必要です'
       };
     }
 
-    if (!targetGroup) {  // 🆕 グループ必須チェック
+    if (!questionType) {
+      return {
+        success: false,
+        error: '問題タイプを選択してください'
+      };
+    }
+
+    // radio/checkbox の場合は選択肢が必要
+    if ((questionType === 'radio' || questionType === 'checkbox') &&
+        (!options || !Array.isArray(options) || options.length < 2)) {
+      return {
+        success: false,
+        error: '選択肢を2つ以上入力してください'
+      };
+    }
+
+    if (!targetGroup) {
       return {
         success: false,
         error: '対象グループを選択してください'
@@ -169,11 +185,44 @@ function createVote(params) {
       .setHelpText('※正確な学号を入力してください（例：2151001）')
       .setRequired(true);
 
-    // 選択肢の質問を追加
-    const checkboxItem = form.addCheckboxItem();
-    checkboxItem.setTitle('選択してください（複数選択可）');
-    checkboxItem.setChoiceValues(options);
-    checkboxItem.setRequired(true);
+    // 🆕 問題タイプに応じて質問を追加
+    switch(questionType) {
+      case 'radio':  // 単一選択（ラジオボタン）
+        const radioItem = form.addMultipleChoiceItem();
+        radioItem.setTitle('選択してください（1つ選択）');
+        radioItem.setChoiceValues(options);
+        radioItem.setRequired(true);
+        Logger.log('単一選択（ラジオボタン）を追加');
+        break;
+
+      case 'checkbox':  // 複数選択（チェックボックス）
+        const checkboxItem = form.addCheckboxItem();
+        checkboxItem.setTitle('選択してください（複数選択可）');
+        checkboxItem.setChoiceValues(options);
+        checkboxItem.setRequired(true);
+        Logger.log('複数選択（チェックボックス）を追加');
+        break;
+
+      case 'text':  // 短答式（1行）
+        const textItem = form.addTextItem();
+        textItem.setTitle('回答を記入してください');
+        textItem.setRequired(true);
+        Logger.log('短答式（1行）を追加');
+        break;
+
+      case 'paragraph':  // 長答式（段落）
+        const paragraphItem = form.addParagraphTextItem();
+        paragraphItem.setTitle('回答を記入してください');
+        paragraphItem.setRequired(true);
+        Logger.log('長答式（段落）を追加');
+        break;
+
+      default:
+        return {
+          success: false,
+          error: '不明な問題タイプです: ' + questionType
+        };
+    }
 
     // フォーム設定
     form.setCollectEmail(false);  // メールアドレス収集しない
