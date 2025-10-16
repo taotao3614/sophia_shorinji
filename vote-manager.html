@@ -438,7 +438,6 @@
     <p>&copy; 2025 上智大学少林寺拳法部</p>
   </div>
 
-  <script src="./js/common.js"></script>
   <script>
     // ===== 設定 =====
     // TODO: 以下のLIFF IDとGAS URLを実際の値に置き換えてください
@@ -659,8 +658,8 @@
             <button class="btn btn-primary" onclick="openVoteForm('${vote.formUrl}'); event.stopPropagation();">
               Formを開く
             </button>
-            <button class="btn btn-secondary" onclick="openVoteDetail('${vote.voteId}'); event.stopPropagation();">
-              詳細を見る
+            <button class="btn btn-secondary" onclick="openResponseSheet('${vote.responseSheetUrl}'); event.stopPropagation();">
+              回答を見る
             </button>
           </div>
         </div>
@@ -894,10 +893,22 @@
     }
 
     /**
-     * 投票詳細ページを開く（vote-detail.html）
+     * 回答表を開く
      */
-    function openVoteDetail(voteId) {
-      window.location.href = `./vote-detail.html?voteId=${voteId}`;
+    function openResponseSheet(url) {
+      if (!url) {
+        showAlert('回答表のURLが見つかりません', 'warning');
+        return;
+      }
+
+      if (liff.isInClient()) {
+        liff.openWindow({
+          url: url,
+          external: true
+        });
+      } else {
+        window.open(url, '_blank');
+      }
     }
 
     /**
@@ -919,6 +930,29 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    /**
+     * ローディング表示
+     */
+    function showLoading() {
+      // 実装省略（必要に応じて追加）
+      console.log('Loading...');
+    }
+
+    /**
+     * ローディング非表示
+     */
+    function hideLoading() {
+      // 実装省略（必要に応じて追加）
+      console.log('Loading complete');
+    }
+
+    /**
+     * アラート表示
+     */
+    function showAlert(message, type = 'info') {
+      alert(message);
     }
 
     // ページロード時に初期化

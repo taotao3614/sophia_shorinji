@@ -20,8 +20,9 @@
 
 // ===== 設定 =====
 // TODO: Google SheetsのIDをここに設定してください
-const MASTER_SHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
+const MASTER_SHEET_ID = '1u_lVjF8hGIACG3b7STwHQE_wYHwNGKXK9i3fmUvFf74';  // あなたのスプレッドシートID
 const MASTER_SHEET_NAME = '投票管理';
+const CHANNEL_ACCESS_TOKEN = 'YOUR_CHANNEL_ACCESS_TOKEN_HERE';  // LINE Channel Access Token（提醒機能用）
 
 /**
  * Web AppのPOSTリクエスト処理
@@ -98,29 +99,27 @@ function getMasterSheet() {
   // シートが存在しない場合は作成
   if (!sheet) {
     sheet = ss.insertSheet(MASTER_SHEET_NAME);
-    // ヘッダー行を設定（拡張版）
-    sheet.getRange(1, 1, 1, 11).setValues([[
-      '投票ID',           // A列
-      '投票タイトル',     // B列
-      '投票説明',         // C列
-      '作成日時',         // D列
-      '締切日時',         // E列
-      'Google Form URL', // F列
-      'Form ID',         // G列
-      'ステータス',       // H列
-      '応答対象者',       // I列
-      '3日前提醒送信済', // J列
-      '1日前提醒送信済'  // K列
+    // ヘッダー行を設定（回答表URLを追加）
+    sheet.getRange(1, 1, 1, 10).setValues([[
+      'Google Form URL',    // A列 - 主キー
+      'Form ID',            // B列
+      'Response Sheet URL', // C列 - 回答表のURL
+      '投票タイトル',        // D列
+      '投票説明',            // E列
+      '作成日時',            // F列
+      '締切日時',            // G列
+      'ステータス',          // H列
+      '応答対象者',          // I列
+      '提醒送信済'           // J列
     ]]);
-    sheet.getRange(1, 1, 1, 11).setFontWeight('bold');
+    sheet.getRange(1, 1, 1, 10).setFontWeight('bold');
     sheet.setFrozenRows(1);
 
     // 列幅を調整
-    sheet.setColumnWidth(1, 180);  // 投票ID
-    sheet.setColumnWidth(2, 200);  // タイトル
-    sheet.setColumnWidth(3, 200);  // 説明
-    sheet.setColumnWidth(6, 300);  // Form URL
-    sheet.setColumnWidth(9, 300);  // 応答対象者
+    sheet.setColumnWidth(1, 350);  // Form URL
+    sheet.setColumnWidth(3, 200);  // タイトル
+    sheet.setColumnWidth(4, 200);  // 説明
+    sheet.setColumnWidth(8, 300);  // 応答対象者
   }
 
   return sheet;
@@ -177,9 +176,15 @@ function createVote(params) {
 
     Logger.log('Google Form作成完了: ' + formUrl);
 
+    // 回答用のSpreadsheetを作成して関連付け
+    const responseSpreadsheet = SpreadsheetApp.create(title + ' (回答)');
+    form.setDestination(FormApp.DestinationType.SPREADSHEET, responseSpreadsheet.getId());
+    const responseSheetUrl = responseSpreadsheet.getUrl();
+
+    Logger.log('回答用スプレッドシート作成完了: ' + responseSheetUrl);
+
     // マスターシートに記録
     const sheet = getMasterSheet();
-    const voteId = generateVoteId();
     const createdAt = new Date().toISOString();
     const status = 'active';
 
@@ -189,24 +194,22 @@ function createVote(params) {
       : (targetMembers || '');
 
     sheet.appendRow([
-      voteId,
-      title,
-      description || '',
-      createdAt,
-      deadline || '',
-      formUrl,
-      formId,
-      status,
-      targetMembersStr,
-      false,  // 3日前提醒未送信
-      false   // 1日前提醒未送信
+      formUrl,            // A列 - Form URL（主キー）
+      formId,             // B列 - Form ID
+      responseSheetUrl,   // C列 - 回答表のURL
+      title,              // D列 - タイトル
+      description || '',  // E列 - 説明
+      createdAt,          // F列 - 作成日時
+      deadline || '',     // G列 - 締切
+      status,             // H列 - ステータス
+      targetMembersStr,   // I列 - 応答対象者
+      false               // J列 - 提醒送信済
     ]);
 
-    Logger.log('マスターシートに記録完了: ' + voteId);
+    Logger.log('マスターシートに記録完了: ' + formUrl);
 
     // Flex Messageを生成
     const flexMessage = generateFlexMessage({
-      voteId: voteId,
       title: title,
       description: description,
       deadline: deadline,
@@ -215,9 +218,9 @@ function createVote(params) {
 
     return {
       success: true,
-      voteId: voteId,
       formUrl: formUrl,
       formId: formId,
+      responseSheetUrl: responseSheetUrl,  // 回答表のURLを追加
       flexMessage: flexMessage,
       message: '投票を作成しました'
     };
@@ -249,15 +252,15 @@ function listVotes(params) {
       // 空行をスキップ
       if (!row[0]) continue;
 
-      const voteId = row[0];
-      const title = row[1];
-      const description = row[2];
-      const createdAt = row[3];
-      const deadline = row[4];
-      const formUrl = row[5];
-      const formId = row[6];
-      let status = row[7];
-      const targetMembersStr = row[8] || '';
+      const formUrl = row[0];        // A列
+      const formId = row[1];         // B列
+      const responseSheetUrl = row[2];  // C列
+      const title = row[3];          // D列
+      const description = row[4];    // E列
+      const createdAt = row[5];      // F列
+      const deadline = row[6];       // G列
+      let status = row[7];           // H列
+      const targetMembersStr = row[8] || '';  // I列
 
       // 締切をチェックしてステータスを更新
       let daysLeft = null;
@@ -267,7 +270,7 @@ function listVotes(params) {
 
         if (daysLeft < 0) {
           status = 'expired';
-          // シートのステータスも更新
+          // シートのステータスも更新（H列）
           sheet.getRange(i + 1, 8).setValue('expired');
         }
       }
@@ -276,13 +279,13 @@ function listVotes(params) {
       const stats = getResponseStatsQuick(formId, targetMembersStr);
 
       votes.push({
-        voteId,
+        formUrl,              // Form URLが主キー
+        formId,
+        responseSheetUrl,     // 回答表URL
         title,
         description,
         createdAt,
         deadline,
-        formUrl,
-        formId,
         status,
         daysLeft: daysLeft,
         stats: stats  // { total, responded, notRespondedCount }
@@ -314,33 +317,33 @@ function listVotes(params) {
  */
 function getVoteDetail(params) {
   try {
-    const { voteId } = params;
+    const { formUrl } = params;
 
-    if (!voteId) {
+    if (!formUrl) {
       return {
         success: false,
-        error: '投票IDが必要です'
+        error: 'Form URLが必要です'
       };
     }
 
     const sheet = getMasterSheet();
     const data = sheet.getDataRange().getValues();
 
-    // 投票を検索
+    // 投票を検索（Form URLで検索）
     for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === voteId) {
+      if (data[i][0] === formUrl) {
         const row = data[i];
 
         const voteData = {
-          voteId: row[0],
-          title: row[1],
-          description: row[2],
-          createdAt: row[3],
-          deadline: row[4],
-          formUrl: row[5],
-          formId: row[6],
-          status: row[7],
-          targetMembersStr: row[8] || ''
+          formUrl: row[0],         // A列
+          formId: row[1],          // B列
+          responseSheetUrl: row[2], // C列
+          title: row[3],           // D列
+          description: row[4],     // E列
+          createdAt: row[5],       // F列
+          deadline: row[6],        // G列
+          status: row[7],          // H列
+          targetMembersStr: row[8] || ''  // I列
         };
 
         // 回答データを詳細に取得
@@ -360,12 +363,13 @@ function getVoteDetail(params) {
         return {
           success: true,
           vote: {
-            voteId: voteData.voteId,
+            formUrl: voteData.formUrl,
+            formId: voteData.formId,
+            responseSheetUrl: voteData.responseSheetUrl,  // 回答表URL
             title: voteData.title,
             description: voteData.description,
             createdAt: voteData.createdAt,
             deadline: voteData.deadline,
-            formUrl: voteData.formUrl,
             status: voteData.status,
             daysLeft: daysLeft
           },
@@ -572,8 +576,8 @@ function checkDeadlines() {
 
       if (!row[0]) continue;  // 空行スキップ
 
-      const status = row[7];
-      const deadline = row[4];
+      const status = row[7];      // H列
+      const deadline = row[6];    // G列
 
       // active状態で締切がある投票のみ
       if (status !== 'active' || !deadline) continue;
@@ -583,7 +587,7 @@ function checkDeadlines() {
 
       checkedCount++;
 
-      // 過期: ステータスを更新
+      // 過期: ステータスを更新（H列）
       if (daysLeft < 0) {
         sheet.getRange(i + 1, 8).setValue('expired');
         expiredCount++;
@@ -609,14 +613,7 @@ function checkDeadlines() {
   }
 }
 
-/**
- * 投票IDを生成（タイムスタンプベース）
- */
-function generateVoteId() {
-  const timestamp = new Date().getTime();
-  const random = Math.floor(Math.random() * 1000);
-  return 'VOTE_' + timestamp + '_' + random;
-}
+// generateVoteId関数は不要になったので削除
 
 /**
  * 定時トリガーを設定（毎日実行）
@@ -641,6 +638,116 @@ function setupDailyTrigger() {
 }
 
 /**
+ * 【初期化関数】主表を初期化またはリセット
+ * Apps Scriptエディタから直接実行してください
+ *
+ * 使用方法:
+ * 1. Apps Script エディタでこの関数を選択
+ * 2. 「実行」ボタンをクリック
+ * 3. 初回実行時は権限の承認が必要
+ *
+ * 注意: 既存のデータがある場合は削除されます！
+ */
+function initializeMasterSheet() {
+  try {
+    Logger.log('=== 主表初期化開始 ===');
+
+    const ss = SpreadsheetApp.openById(MASTER_SHEET_ID);
+    let sheet = ss.getSheetByName(MASTER_SHEET_NAME);
+
+    // 既存のシートがある場合は削除
+    if (sheet) {
+      Logger.log('既存の主表を削除します: ' + MASTER_SHEET_NAME);
+      ss.deleteSheet(sheet);
+    }
+
+    // 新しいシートを作成
+    Logger.log('新しい主表を作成します: ' + MASTER_SHEET_NAME);
+    sheet = ss.insertSheet(MASTER_SHEET_NAME);
+
+    // ヘッダー行を設定
+    sheet.getRange(1, 1, 1, 10).setValues([[
+      'Google Form URL',    // A列 - 主キー
+      'Form ID',            // B列
+      'Response Sheet URL', // C列 - 回答表のURL
+      '投票タイトル',        // D列
+      '投票説明',            // E列
+      '作成日時',            // F列
+      '締切日時',            // G列
+      'ステータス',          // H列
+      '応答対象者',          // I列
+      '提醒送信済'           // J列
+    ]]);
+
+    // ヘッダー行のスタイル設定
+    const headerRange = sheet.getRange(1, 1, 1, 10);
+    headerRange.setFontWeight('bold');
+    headerRange.setBackground('#b8282d');  // 上智大学の赤色
+    headerRange.setFontColor('#ffffff');   // 白文字
+    headerRange.setHorizontalAlignment('center');
+
+    // ヘッダー行を固定
+    sheet.setFrozenRows(1);
+
+    // 列幅を調整
+    sheet.setColumnWidth(1, 400);  // A列: Form URL
+    sheet.setColumnWidth(2, 200);  // B列: Form ID
+    sheet.setColumnWidth(3, 400);  // C列: Response Sheet URL
+    sheet.setColumnWidth(4, 200);  // D列: タイトル
+    sheet.setColumnWidth(5, 250);  // E列: 説明
+    sheet.setColumnWidth(6, 180);  // F列: 作成日時
+    sheet.setColumnWidth(7, 150);  // G列: 締切日時
+    sheet.setColumnWidth(8, 100);  // H列: ステータス
+    sheet.setColumnWidth(9, 300);  // I列: 応答対象者
+    sheet.setColumnWidth(10, 100); // J列: 提醒送信済
+
+    // データ検証を設定（H列：ステータス）
+    const statusRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(['active', 'expired'], true)
+      .setAllowInvalid(false)
+      .build();
+    sheet.getRange(2, 8, 1000, 1).setDataValidation(statusRule);
+
+    // データ検証を設定（J列：提醒送信済）
+    const booleanRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(['TRUE', 'FALSE'], true)
+      .setAllowInvalid(false)
+      .build();
+    sheet.getRange(2, 10, 1000, 1).setDataValidation(booleanRule);
+
+    Logger.log('✅ 主表初期化完了！');
+    Logger.log('シート名: ' + MASTER_SHEET_NAME);
+    Logger.log('URL: ' + ss.getUrl());
+
+    // 成功メッセージをスプレッドシートに表示
+    Browser.msgBox(
+      '初期化完了',
+      '主表「' + MASTER_SHEET_NAME + '」を初期化しました！\\n\\n' +
+      'これでLIFFページから投票を作成できます。',
+      Browser.Buttons.OK
+    );
+
+    return {
+      success: true,
+      message: '主表を初期化しました',
+      sheetUrl: ss.getUrl()
+    };
+
+  } catch (error) {
+    Logger.log('❌ 初期化エラー: ' + error.toString());
+    Browser.msgBox(
+      'エラー',
+      '主表の初期化に失敗しました:\\n' + error.toString(),
+      Browser.Buttons.OK
+    );
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+/**
  * テスト関数 - Apps Scriptエディタから直接実行可能
  */
 function testCreateVote() {
@@ -661,9 +768,9 @@ function testListVotes() {
 }
 
 function testGetVoteDetail() {
-  // 実際の投票IDに置き換えてテスト
+  // 実際のForm URLに置き換えてテスト
   const result = getVoteDetail({
-    voteId: 'VOTE_1234567890_123'
+    formUrl: 'https://forms.gle/xxxxx'
   });
   Logger.log(JSON.stringify(result, null, 2));
 }
