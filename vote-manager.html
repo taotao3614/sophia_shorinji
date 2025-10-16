@@ -746,12 +746,14 @@
       const closeModal = () => {
         modal.style.display = 'none';
         document.getElementById('create-vote-form').reset();
-        // 問題リストをクリア
+        // 🐛 修正：問題リストを完全にリセット
         questions = [];
+        questionIdCounter = 1;
         const container = document.getElementById('questions-container');
         if (container) {
           container.innerHTML = '';
         }
+        console.log('✅ モーダルを閉じて問題リストをリセットしました');
       };
 
       btnCancel.addEventListener('click', closeModal);
@@ -1023,6 +1025,13 @@
      * 問題リストを初期化（学号問題を追加）
      */
     function initializeQuestions() {
+      // 🐛 修正：既に初期化されている場合はスキップ
+      if (questions.length > 0) {
+        console.log('⚠️ 問題リストは既に初期化されています。スキップします。');
+        renderQuestions();  // 既存の問題を再描画するだけ
+        return;
+      }
+
       questions = [];
       questionIdCounter = 1;
 
@@ -1037,6 +1046,7 @@
         options: []
       });
 
+      console.log('✅ 問題リストを初期化しました（学号問題を追加）');
       renderQuestions();
     }
 
@@ -1367,8 +1377,9 @@
         // 作成モーダルを閉じる
         document.getElementById('create-vote-modal').style.display = 'none';
         document.getElementById('create-vote-form').reset();
-        // 問題リストをクリア
+        // 🐛 修正：問題リストを完全にリセット
         questions = [];
+        questionIdCounter = 1;
         const container = document.getElementById('questions-container');
         if (container) {
           container.innerHTML = '';
