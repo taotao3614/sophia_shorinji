@@ -130,8 +130,9 @@ async function callGAS(action, params = {}) {
 
 /**
  * ローディングインジケータを表示
+ * @param {string} message - 表示するメッセージ（オプション）
  */
-function showLoading() {
+function showLoading(message = '処理中...') {
   let loadingEl = document.getElementById('global-loading');
 
   if (!loadingEl) {
@@ -152,9 +153,10 @@ function showLoading() {
     loadingEl.innerHTML = `
       <div style="
         background: white;
-        padding: 30px;
+        padding: 30px 40px;
         border-radius: 8px;
         text-align: center;
+        max-width: 80%;
       ">
         <div class="spinner" style="
           border: 4px solid #f3f3f3;
@@ -165,7 +167,7 @@ function showLoading() {
           animation: spin 1s linear infinite;
           margin: 0 auto 15px;
         "></div>
-        <p style="margin: 0; color: #666;">処理中...</p>
+        <p id="loading-message" style="margin: 0; color: #666; font-size: 0.95rem; line-height: 1.5;"></p>
       </div>
     `;
     document.body.appendChild(loadingEl);
@@ -182,6 +184,12 @@ function showLoading() {
       `;
       document.head.appendChild(style);
     }
+  }
+
+  // メッセージを更新
+  const messageEl = loadingEl.querySelector('#loading-message');
+  if (messageEl) {
+    messageEl.textContent = message;
   }
 
   loadingEl.style.display = 'flex';

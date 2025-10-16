@@ -37,34 +37,40 @@
       background-color: #9a1f24;
     }
 
-    /* 投票カードのスタイル */
+    /* 🆕 扁平化投票カードのスタイル */
     .vote-card {
       background: var(--bg-white);
       border-radius: 4px;
-      padding: 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      border-left: 4px solid var(--accent-red);
-      transition: all 0.3s ease;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+      border-left: 3px solid var(--accent-red);
+      transition: all 0.2s ease;
     }
 
     .vote-card:hover {
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
       transform: translateX(2px);
     }
 
     .vote-card-title {
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 600;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
       color: var(--text-medium);
+      line-height: 1.4;
     }
 
     .vote-card-description {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: var(--text-light);
-      margin-bottom: 12px;
-      line-height: 1.6;
+      margin-bottom: 8px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     /* 🆕 回答進捗バー */
@@ -99,16 +105,17 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--text-lighter);
-      margin-top: 12px;
+      margin-top: 8px;
+      margin-bottom: 8px;
     }
 
     .vote-status {
       display: inline-block;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 0.8rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
       font-weight: 500;
     }
 
@@ -125,13 +132,13 @@
     /* 🆕 緊急バッジ */
     .urgent-badge {
       display: inline-block;
-      padding: 4px 8px;
+      padding: 3px 6px;
       background-color: #ff9800;
       color: white;
-      border-radius: 4px;
-      font-size: 0.75rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
       font-weight: 600;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .urgent-badge.danger {
@@ -141,14 +148,14 @@
     /* 🆕 投票アクションボタン */
     .vote-actions {
       display: flex;
-      gap: 8px;
-      margin-top: 12px;
+      gap: 6px;
+      margin-top: 8px;
     }
 
     .vote-actions .btn {
       flex: 1;
-      padding: 8px 12px;
-      font-size: 0.85rem;
+      padding: 6px 10px;
+      font-size: 0.8rem;
     }
 
     /* モーダルスタイル */
@@ -403,27 +410,79 @@
       margin-top: 4px;
     }
 
+    /* 🆕 Tab スタイル */
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #e0e0e0;
+      margin-bottom: 20px;
+      gap: 0;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px 16px;
+      background: transparent;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: all 0.2s;
+      border-bottom: 3px solid transparent;
+      position: relative;
+      bottom: -2px;
+    }
+
+    .tab:hover {
+      color: var(--accent-red);
+      background: #fff5f5;
+    }
+
+    .tab.active {
+      color: var(--accent-red);
+      border-bottom-color: var(--accent-red);
+      background: #fff5f5;
+    }
+
+    .tab-badge {
+      display: inline-block;
+      background: var(--accent-red);
+      color: white;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      margin-left: 6px;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .tab.active .tab-badge {
+      background: #9a1f24;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
     /* 空状態 */
     .empty-state {
       text-align: center;
-      padding: 40px 20px;
+      padding: 30px 20px;
       color: var(--text-light);
     }
 
     .empty-state-icon {
-      font-size: 3rem;
-      margin-bottom: 16px;
+      font-size: 2.5rem;
+      margin-bottom: 12px;
       opacity: 0.5;
     }
 
-    /* セクションタイトル */
-    .section-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: var(--accent-red);
-      margin-bottom: 16px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid var(--accent-red);
+    .empty-state-text {
+      font-size: 0.9rem;
     }
 
     /* 🆕 Flex Message表示エリア */
@@ -465,19 +524,30 @@
       <button class="btn btn-primary" id="btn-create-vote">新規投票を作成</button>
     </div>
 
-    <!-- 進行中の投票 -->
-    <div class="section-title">📊 進行中の投票</div>
-    <div id="active-votes-container">
-      <div class="loading">
-        <div class="spinner"></div>
+    <!-- 🆕 Tab 切り替え -->
+    <div class="tabs">
+      <button class="tab active" id="tab-active" onclick="switchTab('active')">
+        📊 進行中 <span class="tab-badge" id="active-count">0</span>
+      </button>
+      <button class="tab" id="tab-expired" onclick="switchTab('expired')">
+        📁 過去の投票 <span class="tab-badge" id="expired-count">0</span>
+      </button>
+    </div>
+
+    <!-- Tab コンテンツ -->
+    <div id="active-tab-content" class="tab-content active">
+      <div id="active-votes-container">
+        <div class="loading">
+          <div class="spinner"></div>
+        </div>
       </div>
     </div>
 
-    <!-- 過去の投票 -->
-    <div class="section-title" style="margin-top: 32px;">📁 過去の投票</div>
-    <div id="expired-votes-container">
-      <div class="loading">
-        <div class="spinner"></div>
+    <div id="expired-tab-content" class="tab-content">
+      <div id="expired-votes-container">
+        <div class="loading">
+          <div class="spinner"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -586,12 +656,16 @@
     let questions = [];  // 🆕 問題リスト
     let questionIdCounter = 1;  // 🆕 問題IDカウンター
 
+    // 🆕 LocalStorage キャッシュの設定
+    const VOTES_CACHE_KEY = 'votes_cache';
+    const CACHE_DURATION = 5 * 60 * 1000;  // 5分
+
     /**
      * ページ初期化
      */
     async function initPage() {
       try {
-        showLoading();
+        showLoading('投票リストを読み込んでいます...');
 
         // LIFF初期化（common.js の initLiff を使用）
         const profile = await initLiff();
@@ -675,14 +749,48 @@
     }
 
     /**
-     * 投票リストを読み込み
+     * 🚀 投票リストを読み込み（LocalStorage キャッシュ付き）
      */
-    async function loadVotes() {
+    async function loadVotes(forceRefresh = false) {
       try {
-        // callGAS を使用（common.js）
+        // 1️⃣ キャッシュをチェック
+        if (!forceRefresh) {
+          const cached = localStorage.getItem(VOTES_CACHE_KEY);
+          if (cached) {
+            try {
+              const cacheData = JSON.parse(cached);
+              const now = Date.now();
+
+              // キャッシュが有効期限内（5分以内）
+              if (now - cacheData.timestamp < CACHE_DURATION) {
+                console.log('✅ キャッシュから投票リストを表示');
+                renderVotes(cacheData.votes);
+
+                // キャッシュを表示しつつ、バックグラウンドで更新
+                console.log('🔄 バックグラウンドで最新データを取得中...');
+                updateVotesInBackground();
+                return;
+              } else {
+                console.log('⏰ キャッシュが期限切れ - 新しいデータを取得');
+              }
+            } catch (e) {
+              console.warn('キャッシュの解析に失敗:', e);
+            }
+          }
+        }
+
+        // 2️⃣ GAS API を呼び出し
+        showLoading('投票リストを読み込んでいます...\nしばらくお待ちください');
         const result = await callGAS('listVotes');
 
-        // 投票を表示
+        // 3️⃣ LocalStorage に保存
+        localStorage.setItem(VOTES_CACHE_KEY, JSON.stringify({
+          votes: result.votes,
+          timestamp: Date.now()
+        }));
+        console.log('💾 投票リストをキャッシュに保存しました');
+
+        // 4️⃣ 投票を表示
         renderVotes(result.votes);
 
       } catch (error) {
@@ -692,6 +800,36 @@
           '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">読み込みに失敗しました</div></div>';
         document.getElementById('expired-votes-container').innerHTML = '';
       }
+    }
+
+    /**
+     * 🆕 バックグラウンドで投票リストを更新
+     */
+    async function updateVotesInBackground() {
+      try {
+        const result = await callGAS('listVotes');
+
+        // キャッシュを更新
+        localStorage.setItem(VOTES_CACHE_KEY, JSON.stringify({
+          votes: result.votes,
+          timestamp: Date.now()
+        }));
+
+        // 画面を静かに更新
+        renderVotes(result.votes);
+        console.log('✅ バックグラウンド更新完了');
+      } catch (error) {
+        console.warn('バックグラウンド更新失敗:', error);
+        // エラーは無視（ユーザーには表示しない）
+      }
+    }
+
+    /**
+     * 🆕 投票キャッシュをクリア
+     */
+    function clearVotesCache() {
+      localStorage.removeItem(VOTES_CACHE_KEY);
+      console.log('🗑️ 投票キャッシュをクリアしました');
     }
 
     /**
@@ -743,6 +881,19 @@
     }
 
     /**
+     * 🆕 Tab切り替え
+     */
+    function switchTab(tabName) {
+      // Tab ボタンのアクティブ状態を切り替え
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+
+      // Tab コンテンツの表示/非表示を切り替え
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.getElementById(`${tabName}-tab-content`).classList.add('active');
+    }
+
+    /**
      * 投票を表示
      */
     function renderVotes(votes) {
@@ -751,6 +902,10 @@
 
       const activeVotes = votes.filter(v => v.status === 'active');
       const expiredVotes = votes.filter(v => v.status === 'expired');
+
+      // 🆕 Tab バッジの数字を更新
+      document.getElementById('active-count').textContent = activeVotes.length;
+      document.getElementById('expired-count').textContent = expiredVotes.length;
 
       // 進行中の投票
       if (activeVotes.length === 0) {
@@ -797,7 +952,7 @@
 
       // 対象グループを表示
       const targetGroupBadge = vote.targetGroup ?
-        `<div style="font-size: 0.85rem; color: #666; margin-bottom: 8px;">📋 対象: ${escapeHtml(vote.targetGroup)}</div>` : '';
+        `<div style="font-size: 0.75rem; color: #888; margin-bottom: 6px;">📋 ${escapeHtml(vote.targetGroup)}</div>` : '';
 
       return `
         <div class="vote-card" data-vote-id="${vote.voteId}">
@@ -1150,8 +1305,9 @@
         // 成功モーダルを表示
         showSuccessModal(result);
 
-        // リストを再読み込み
-        await loadVotes();
+        // 🆕 キャッシュをクリアして最新データを取得
+        clearVotesCache();
+        await loadVotes(true);  // forceRefresh = true
 
       } catch (error) {
         console.error('投票作成エラー:', error);
