@@ -642,7 +642,12 @@
       const closeModal = () => {
         modal.style.display = 'none';
         document.getElementById('create-vote-form').reset();
-        resetOptions();
+        // 問題リストをクリア
+        questions = [];
+        const container = document.getElementById('questions-container');
+        if (container) {
+          container.innerHTML = '';
+        }
       };
 
       btnCancel.addEventListener('click', closeModal);
@@ -1135,7 +1140,12 @@
         // 作成モーダルを閉じる
         document.getElementById('create-vote-modal').style.display = 'none';
         document.getElementById('create-vote-form').reset();
-        resetOptions();
+        // 問題リストをクリア
+        questions = [];
+        const container = document.getElementById('questions-container');
+        if (container) {
+          container.innerHTML = '';
+        }
 
         // 成功モーダルを表示
         showSuccessModal(result);
