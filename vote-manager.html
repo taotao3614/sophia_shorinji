@@ -468,21 +468,6 @@
 
         console.log('✅ LIFF初期化成功:', profile.displayName);
 
-        // 🔍 デバッグ：GAS URL をテスト
-        console.log('📍 GAS URL:', LIFF_CONFIG.gasUrl);
-
-        // GAS 接続テスト
-        try {
-          const testResponse = await fetch(LIFF_CONFIG.gasUrl, {
-            method: 'GET',
-            mode: 'cors'
-          });
-          const testText = await testResponse.text();
-          console.log('✅ GAS GET テスト成功:', testText.substring(0, 100));
-        } catch (error) {
-          console.error('❌ GAS GET テスト失敗:', error);
-        }
-
         // 投票リストを読み込み
         await loadVotes();
 
