@@ -813,6 +813,38 @@ function testGetVoteDetail() {
   Logger.log(JSON.stringify(result, null, 2));
 }
 
+// 🆕 テスト関数：人員管理表の確認
+function testMemberSheet() {
+  try {
+    Logger.log('=== 人員管理表テスト開始 ===');
+
+    // 1. シートを取得
+    var sheet = getMemberSheet();
+    Logger.log('✅ シート取得成功: ' + sheet.getName());
+
+    // 2. 全データを取得
+    var data = sheet.getDataRange().getValues();
+    Logger.log('行数: ' + data.length);
+    Logger.log('列数: ' + data[0].length);
+
+    // 3. ヘッダー行を確認
+    Logger.log('ヘッダー: ' + JSON.stringify(data[0]));
+
+    // 4. グループ名を取得
+    var result = getGroupNames();
+    Logger.log('getGroupNames() 結果: ' + JSON.stringify(result));
+
+    return result;
+
+  } catch (error) {
+    Logger.log('❌ エラー: ' + error.toString());
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
 // ========================================
 // 🆕 人員管理システム関連の関数
 // ========================================
