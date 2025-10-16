@@ -19,10 +19,9 @@
  */
 
 // ===== 設定 =====
-// TODO: Google SheetsのIDをここに設定してください
-const MASTER_SHEET_ID = '1u_lVjF8hGIACG3b7STwHQE_wYHwNGKXK9i3fmUvFf74';  // あなたのスプレッドシートID
-const MASTER_SHEET_NAME = '投票管理';
-const CHANNEL_ACCESS_TOKEN = 'YOUR_CHANNEL_ACCESS_TOKEN_HERE';  // LINE Channel Access Token（提醒機能用）
+// このスクリプトはSpreadsheetに直接バインドされています
+var MASTER_SHEET_NAME = '投票管理';
+var CHANNEL_ACCESS_TOKEN = 'YOUR_CHANNEL_ACCESS_TOKEN_HERE';  // LINE Channel Access Token（提醒機能用）
 
 /**
  * Web AppのPOSTリクエスト処理
@@ -93,8 +92,8 @@ function createJsonResponse(data) {
  * マスターシートを取得
  */
 function getMasterSheet() {
-  const ss = SpreadsheetApp.openById(MASTER_SHEET_ID);
-  let sheet = ss.getSheetByName(MASTER_SHEET_NAME);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();  // バインドされたスプレッドシートを取得
+  var sheet = ss.getSheetByName(MASTER_SHEET_NAME);
 
   // シートが存在しない場合は作成
   if (!sheet) {
@@ -652,8 +651,8 @@ function initializeMasterSheet() {
   try {
     Logger.log('=== 主表初期化開始 ===');
 
-    const ss = SpreadsheetApp.openById(MASTER_SHEET_ID);
-    let sheet = ss.getSheetByName(MASTER_SHEET_NAME);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();  // バインドされたスプレッドシートを取得
+    var sheet = ss.getSheetByName(MASTER_SHEET_NAME);
 
     // 既存のシートがある場合は削除
     if (sheet) {
@@ -680,7 +679,7 @@ function initializeMasterSheet() {
     ]]);
 
     // ヘッダー行のスタイル設定
-    const headerRange = sheet.getRange(1, 1, 1, 10);
+    var headerRange = sheet.getRange(1, 1, 1, 10);
     headerRange.setFontWeight('bold');
     headerRange.setBackground('#b8282d');  // 上智大学の赤色
     headerRange.setFontColor('#ffffff');   // 白文字
@@ -702,14 +701,14 @@ function initializeMasterSheet() {
     sheet.setColumnWidth(10, 100); // J列: 提醒送信済
 
     // データ検証を設定（H列：ステータス）
-    const statusRule = SpreadsheetApp.newDataValidation()
+    var statusRule = SpreadsheetApp.newDataValidation()
       .requireValueInList(['active', 'expired'], true)
       .setAllowInvalid(false)
       .build();
     sheet.getRange(2, 8, 1000, 1).setDataValidation(statusRule);
 
     // データ検証を設定（J列：提醒送信済）
-    const booleanRule = SpreadsheetApp.newDataValidation()
+    var booleanRule = SpreadsheetApp.newDataValidation()
       .requireValueInList(['TRUE', 'FALSE'], true)
       .setAllowInvalid(false)
       .build();
