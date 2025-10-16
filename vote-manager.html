@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>投票管理 - 上智大学少林寺拳法部</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    /* 赤色テーマのオーバーライド */
+    .header {
+      background: var(--accent-red);
+    }
+
+    .header::after {
+      background: var(--accent-gold);
+    }
+
+    .card {
+      border-left-color: var(--accent-red);
+    }
+
+    .card-title {
+      color: var(--accent-red);
+    }
+
+    .btn-primary {
+      background-color: var(--accent-red);
+      color: var(--bg-white);
+    }
+
+    .btn-primary:hover {
+      background-color: #9a1f24;
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    /* 投票カードのスタイル */
+    .vote-card {
+      background: var(--bg-white);
+      border-radius: 4px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border-left: 4px solid var(--accent-red);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .vote-card:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      transform: translateX(2px);
+    }
+
+    .vote-card:active {
+      transform: translateX(1px);
+    }
+
+    .vote-card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-medium);
+    }
+
+    .vote-card-description {
+      font-size: 0.9rem;
+      color: var(--text-light);
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .vote-card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-lighter);
+    }
+
+    .vote-status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .vote-status.active {
+      background-color: #e8f5e9;
+      color: #2d7a3e;
+    }
+
+    .vote-status.expired {
+      background-color: #f5f5f5;
+      color: #999999;
+    }
+
+    /* モーダルスタイル */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background-color: var(--bg-white);
+      margin: 10% auto;
+      padding: 0;
+      border-radius: 8px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      animation: slideDown 0.3s;
+    }
+
+    @keyframes slideDown {
+      from {
+        transform: translateY(-50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-header {
+      background: var(--accent-red);
+      color: var(--bg-white);
+      padding: 20px;
+      border-radius: 8px 8px 0 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .close {
+      color: var(--bg-white);
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      line-height: 1;
+      cursor: pointer;
+      opacity: 0.8;
+    }
+
+    .close:hover {
+      opacity: 1;
+    }
+
+    /* オプション入力スタイル */
+    .option-input-group {
+      margin-bottom: 12px;
+    }
+
+    .option-input-wrapper {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .option-input-wrapper input {
+      flex: 1;
+    }
+
+    .btn-remove-option {
+      padding: 8px 16px;
+      background-color: var(--error-color);
+      color: var(--bg-white);
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .btn-remove-option:hover {
+      background-color: #9a1f24;
+    }
+
+    .btn-add-option {
+      padding: 10px 20px;
+      background-color: var(--sophia-gray);
+      color: var(--text-dark);
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .btn-add-option:hover {
+      background-color: #99a5af;
+    }
+
+    /* 空状態 */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-light);
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state-text {
+      font-size: 0.95rem;
+    }
+
+    /* セクションタイトル */
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--accent-red);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--accent-red);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📋 投票管理</h1>
+    <p>投票・アンケートの作成と管理</p>
+  </div>
+
+  <div class="container">
+    <!-- 新規作成ボタン -->
+    <div class="card">
+      <div class="card-title">🗳️ 新規投票を作成</div>
+      <div class="card-description">
+        Google Formを使った投票やアンケートを簡単に作成できます。
+      </div>
+      <button class="btn btn-primary" id="btn-create-vote">新規投票を作成</button>
+    </div>
+
+    <!-- 進行中の投票 -->
+    <div class="section-title">📊 進行中の投票</div>
+    <div id="active-votes-container">
+      <div class="loading">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <!-- 過去の投票 -->
+    <div class="section-title" style="margin-top: 32px;">📁 過去の投票</div>
+    <div id="expired-votes-container">
+      <div class="loading">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 投票作成モーダル -->
+  <div id="create-vote-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        新規投票を作成
+        <span class="close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <form id="create-vote-form">
+          <div class="form-group">
+            <label class="form-label">投票タイトル <span style="color: var(--accent-red);">*</span></label>
+            <input type="text" class="form-input" id="vote-title" placeholder="例: 2月合宿の参加調査" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">投票説明</label>
+            <textarea class="form-textarea" id="vote-description" placeholder="投票の目的や詳細を記入してください"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">選択肢 <span style="color: var(--accent-red);">*</span></label>
+            <div id="options-container">
+              <div class="option-input-wrapper">
+                <input type="text" class="form-input option-input" placeholder="選択肢1" required>
+              </div>
+              <div class="option-input-wrapper">
+                <input type="text" class="form-input option-input" placeholder="選択肢2" required>
+              </div>
+            </div>
+            <button type="button" class="btn-add-option" id="btn-add-option">+ 選択肢を追加</button>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">締切日時</label>
+            <input type="date" class="form-input" id="vote-deadline">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-create">キャンセル</button>
+        <button class="btn btn-primary" id="btn-submit-create">作成する</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2025 上智大学少林寺拳法部</p>
+  </div>
+
+  <script src="./js/common.js"></script>
+  <script>
+    let gasUrl = '';
+    let userProfile = null;
+
+    /**
+     * ページ初期化
+     */
+    async function initPage() {
+      showLoading();
+      try {
+        // LIFF初期化
+        await initializeLiff();
+        userProfile = await getUserProfile();
+
+        // 設定を読み込み
+        const config = await loadConfig();
+        gasUrl = config.voteManagerGasUrl;
+
+        if (!gasUrl) {
+          throw new Error('GAS URLが設定されていません。config.jsonを確認してください。');
+        }
+
+        // 投票リストを読み込み
+        await loadVotes();
+
+        // イベントリスナー設定
+        setupEventListeners();
+
+      } catch (error) {
+        console.error('初期化エラー:', error);
+        showAlert('ページの初期化に失敗しました: ' + error.message, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    /**
+     * イベントリスナー設定
+     */
+    function setupEventListeners() {
+      const modal = document.getElementById('create-vote-modal');
+      const btnCreate = document.getElementById('btn-create-vote');
+      const btnCancel = document.getElementById('btn-cancel-create');
+      const btnSubmit = document.getElementById('btn-submit-create');
+      const btnAddOption = document.getElementById('btn-add-option');
+      const closeBtn = document.querySelector('.close');
+
+      // モーダルを開く
+      btnCreate.addEventListener('click', () => {
+        modal.style.display = 'block';
+      });
+
+      // モーダルを閉じる
+      const closeModal = () => {
+        modal.style.display = 'none';
+        document.getElementById('create-vote-form').reset();
+        resetOptions();
+      };
+
+      btnCancel.addEventListener('click', closeModal);
+      closeBtn.addEventListener('click', closeModal);
+
+      // モーダル外クリックで閉じる
+      window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+          closeModal();
+        }
+      });
+
+      // 選択肢を追加
+      btnAddOption.addEventListener('click', addOptionInput);
+
+      // フォーム送信
+      btnSubmit.addEventListener('click', handleCreateVote);
+    }
+
+    /**
+     * 投票リストを読み込み
+     */
+    async function loadVotes() {
+      try {
+        const response = await fetch(gasUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'listVotes'
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error || '投票リストの取得に失敗しました');
+        }
+
+        // 投票を表示
+        renderVotes(result.votes);
+
+      } catch (error) {
+        console.error('投票リスト取得エラー:', error);
+        showAlert('投票リストの取得に失敗しました: ' + error.message, 'error');
+        document.getElementById('active-votes-container').innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">読み込みに失敗しました</div></div>';
+        document.getElementById('expired-votes-container').innerHTML = '';
+      }
+    }
+
+    /**
+     * 投票を表示
+     */
+    function renderVotes(votes) {
+      const activeContainer = document.getElementById('active-votes-container');
+      const expiredContainer = document.getElementById('expired-votes-container');
+
+      const activeVotes = votes.filter(v => v.status === 'active');
+      const expiredVotes = votes.filter(v => v.status === 'expired');
+
+      // 進行中の投票
+      if (activeVotes.length === 0) {
+        activeContainer.innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">進行中の投票はありません</div></div>';
+      } else {
+        activeContainer.innerHTML = activeVotes.map(vote => createVoteCard(vote)).join('');
+      }
+
+      // 過去の投票
+      if (expiredVotes.length === 0) {
+        expiredContainer.innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">過去の投票はありません</div></div>';
+      } else {
+        expiredContainer.innerHTML = expiredVotes.map(vote => createVoteCard(vote)).join('');
+      }
+
+      // クリックイベントを追加
+      document.querySelectorAll('.vote-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const url = card.dataset.url;
+          openVoteForm(url);
+        });
+      });
+    }
+
+    /**
+     * 投票カードHTMLを作成
+     */
+    function createVoteCard(vote) {
+      const statusClass = vote.status === 'active' ? 'active' : 'expired';
+      const statusText = vote.status === 'active' ? '進行中' : '終了';
+      const deadlineText = vote.deadline ? `締切: ${formatDate(vote.deadline)}` : '締切なし';
+
+      return `
+        <div class="vote-card" data-url="${vote.formUrl}">
+          <div class="vote-card-title">${escapeHtml(vote.title)}</div>
+          ${vote.description ? `<div class="vote-card-description">${escapeHtml(vote.description)}</div>` : ''}
+          <div class="vote-card-meta">
+            <span>${deadlineText}</span>
+            <span class="vote-status ${statusClass}">${statusText}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    /**
+     * 投票作成処理
+     */
+    async function handleCreateVote() {
+      try {
+        // フォームデータ取得
+        const title = document.getElementById('vote-title').value.trim();
+        const description = document.getElementById('vote-description').value.trim();
+        const deadline = document.getElementById('vote-deadline').value;
+
+        // 選択肢を取得
+        const optionInputs = document.querySelectorAll('.option-input');
+        const options = Array.from(optionInputs)
+          .map(input => input.value.trim())
+          .filter(val => val !== '');
+
+        // バリデーション
+        if (!title) {
+          showAlert('投票タイトルを入力してください', 'warning');
+          return;
+        }
+
+        if (options.length < 2) {
+          showAlert('選択肢を2つ以上入力してください', 'warning');
+          return;
+        }
+
+        // ローディング表示
+        showLoading();
+        const btnSubmit = document.getElementById('btn-submit-create');
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = '作成中...';
+
+        // GASに送信
+        const response = await fetch(gasUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'createVote',
+            title: title,
+            description: description,
+            options: options,
+            deadline: deadline
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error || '投票の作成に失敗しました');
+        }
+
+        // 成功
+        showAlert('投票を作成しました！', 'success');
+
+        // モーダルを閉じる
+        document.getElementById('create-vote-modal').style.display = 'none';
+        document.getElementById('create-vote-form').reset();
+        resetOptions();
+
+        // リストを再読み込み
+        await loadVotes();
+
+      } catch (error) {
+        console.error('投票作成エラー:', error);
+        showAlert('投票の作成に失敗しました: ' + error.message, 'error');
+      } finally {
+        hideLoading();
+        const btnSubmit = document.getElementById('btn-submit-create');
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = '作成する';
+      }
+    }
+
+    /**
+     * 選択肢入力欄を追加
+     */
+    function addOptionInput() {
+      const container = document.getElementById('options-container');
+      const optionCount = container.querySelectorAll('.option-input-wrapper').length + 1;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'option-input-wrapper';
+      wrapper.innerHTML = `
+        <input type="text" class="form-input option-input" placeholder="選択肢${optionCount}">
+        <button type="button" class="btn-remove-option" onclick="removeOptionInput(this)">削除</button>
+      `;
+
+      container.appendChild(wrapper);
+    }
+
+    /**
+     * 選択肢入力欄を削除
+     */
+    function removeOptionInput(button) {
+      const wrapper = button.parentElement;
+      wrapper.remove();
+    }
+
+    /**
+     * 選択肢をリセット
+     */
+    function resetOptions() {
+      const container = document.getElementById('options-container');
+      container.innerHTML = `
+        <div class="option-input-wrapper">
+          <input type="text" class="form-input option-input" placeholder="選択肢1" required>
+        </div>
+        <div class="option-input-wrapper">
+          <input type="text" class="form-input option-input" placeholder="選択肢2" required>
+        </div>
+      `;
+    }
+
+    /**
+     * Google Formを開く
+     */
+    function openVoteForm(url) {
+      if (liff.isInClient()) {
+        liff.openWindow({
+          url: url,
+          external: true
+        });
+      } else {
+        window.open(url, '_blank');
+      }
+    }
+
+    /**
+     * 日付フォーマット
+     */
+    function formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}/${month}/${day}`;
+    }
+
+    /**
+     * HTMLエスケープ
+     */
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ページロード時に初期化
+    window.addEventListener('load', initPage);
+  </script>
+</body>
+</html>
