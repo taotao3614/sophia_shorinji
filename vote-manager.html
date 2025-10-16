@@ -33,11 +33,6 @@
       background-color: #9a1f24;
     }
 
-    .btn-primary:active {
-      transform: translateY(1px);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-
     /* 投票カードのスタイル */
     .vote-card {
       background: var(--bg-white);
@@ -47,16 +42,11 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       border-left: 4px solid var(--accent-red);
       transition: all 0.3s ease;
-      cursor: pointer;
     }
 
     .vote-card:hover {
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       transform: translateX(2px);
-    }
-
-    .vote-card:active {
-      transform: translateX(1px);
     }
 
     .vote-card-title {
@@ -73,12 +63,41 @@
       line-height: 1.6;
     }
 
+    /* 🆕 回答進捗バー */
+    .vote-progress {
+      margin: 12px 0;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background-color: #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: var(--accent-red);
+      transition: width 0.3s ease;
+    }
+
+    .vote-stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+
     .vote-card-meta {
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 0.85rem;
       color: var(--text-lighter);
+      margin-top: 12px;
     }
 
     .vote-status {
@@ -97,6 +116,35 @@
     .vote-status.expired {
       background-color: #f5f5f5;
       color: #999999;
+    }
+
+    /* 🆕 緊急バッジ */
+    .urgent-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      background-color: #ff9800;
+      color: white;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .urgent-badge.danger {
+      background-color: #f44336;
+    }
+
+    /* 🆕 投票アクションボタン */
+    .vote-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .vote-actions .btn {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 0.85rem;
     }
 
     /* モーダルスタイル */
@@ -119,11 +167,13 @@
 
     .modal-content {
       background-color: var(--bg-white);
-      margin: 10% auto;
+      margin: 5% auto;
       padding: 0;
       border-radius: 8px;
       max-width: 500px;
       width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
       animation: slideDown 0.3s;
     }
@@ -175,10 +225,6 @@
     }
 
     /* オプション入力スタイル */
-    .option-input-group {
-      margin-bottom: 12px;
-    }
-
     .option-input-wrapper {
       display: flex;
       gap: 8px;
@@ -199,10 +245,6 @@
       font-size: 0.9rem;
     }
 
-    .btn-remove-option:hover {
-      background-color: #9a1f24;
-    }
-
     .btn-add-option {
       padding: 10px 20px;
       background-color: var(--sophia-gray);
@@ -215,8 +257,17 @@
       margin-top: 8px;
     }
 
-    .btn-add-option:hover {
-      background-color: #99a5af;
+    /* 🆕 応答対象者入力 */
+    .target-members-input {
+      font-family: monospace;
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .help-text {
+      font-size: 0.85rem;
+      color: var(--text-lighter);
+      margin-top: 4px;
     }
 
     /* 空状態 */
@@ -232,10 +283,6 @@
       opacity: 0.5;
     }
 
-    .empty-state-text {
-      font-size: 0.95rem;
-    }
-
     /* セクションタイトル */
     .section-title {
       font-size: 1.1rem;
@@ -244,6 +291,28 @@
       margin-bottom: 16px;
       padding-bottom: 8px;
       border-bottom: 2px solid var(--accent-red);
+    }
+
+    /* 🆕 Flex Message表示エリア */
+    .flex-message-display {
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .flex-message-display pre {
+      margin: 0;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .copy-button {
+      margin-top: 8px;
+      width: 100%;
     }
   </style>
 </head>
@@ -316,11 +385,51 @@
             <label class="form-label">締切日時</label>
             <input type="date" class="form-input" id="vote-deadline">
           </div>
+
+          <!-- 🆕 応答対象者リスト -->
+          <div class="form-group">
+            <label class="form-label">応答対象者リスト（1行1名）<span style="color: var(--accent-red);">*</span></label>
+            <textarea class="form-textarea target-members-input" id="target-members" placeholder="張三&#10;李四&#10;王五&#10;趙六" required></textarea>
+            <div class="help-text">※この名簿と回答者を比較して、未回答者を表示します</div>
+          </div>
         </form>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" id="btn-cancel-create">キャンセル</button>
         <button class="btn btn-primary" id="btn-submit-create">作成する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🆕 作成成功モーダル（Flex Message表示） -->
+  <div id="success-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        ✅ 投票を作成しました
+        <span class="close" id="close-success">&times;</span>
+      </div>
+      <div class="modal-body">
+        <p><strong>投票が正常に作成されました！</strong></p>
+        <p>以下のボタンから共有してください：</p>
+
+        <button class="btn btn-primary" id="btn-share-line" style="width: 100%; margin: 8px 0;">
+          📱 LINEで共有
+        </button>
+
+        <button class="btn btn-secondary" id="btn-copy-url" style="width: 100%; margin: 8px 0;">
+          📋 URLをコピー
+        </button>
+
+        <div style="margin-top: 16px;">
+          <label class="form-label">Flex Message JSON（LINEで送信用）</label>
+          <div class="flex-message-display" id="flex-message-content"></div>
+          <button class="btn btn-secondary copy-button" id="btn-copy-flex">
+            📋 Flex MessageをコピーSi
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btn-close-success">閉じる</button>
       </div>
     </div>
   </div>
@@ -333,6 +442,7 @@
   <script>
     let gasUrl = '';
     let userProfile = null;
+    let currentVoteData = null;  // 作成した投票データを保存
 
     /**
      * ページ初期化
@@ -404,6 +514,13 @@
 
       // フォーム送信
       btnSubmit.addEventListener('click', handleCreateVote);
+
+      // 成功モーダルのイベント
+      document.getElementById('close-success').addEventListener('click', closeSuccessModal);
+      document.getElementById('btn-close-success').addEventListener('click', closeSuccessModal);
+      document.getElementById('btn-share-line').addEventListener('click', shareToLine);
+      document.getElementById('btn-copy-url').addEventListener('click', copyFormUrl);
+      document.getElementById('btn-copy-flex').addEventListener('click', copyFlexMessage);
     }
 
     /**
@@ -466,32 +583,73 @@
       }
 
       // クリックイベントを追加
-      document.querySelectorAll('.vote-card').forEach(card => {
-        card.addEventListener('click', () => {
-          const url = card.dataset.url;
-          openVoteForm(url);
-        });
-      });
+      addVoteCardListeners();
     }
 
     /**
-     * 投票カードHTMLを作成
+     * 投票カードHTMLを作成（回答進捗付き）
      */
     function createVoteCard(vote) {
       const statusClass = vote.status === 'active' ? 'active' : 'expired';
       const statusText = vote.status === 'active' ? '進行中' : '終了';
       const deadlineText = vote.deadline ? `締切: ${formatDate(vote.deadline)}` : '締切なし';
 
+      // 進捗バーの計算
+      const stats = vote.stats || { total: 0, responded: 0, notRespondedCount: 0 };
+      const percentage = stats.total > 0 ? Math.round((stats.responded / stats.total) * 100) : 0;
+
+      // 緊急バッジ
+      let urgentBadge = '';
+      if (vote.daysLeft !== null && vote.daysLeft >= 0) {
+        if (vote.daysLeft === 0) {
+          urgentBadge = '<div class="urgent-badge danger">⏰ 本日締切！</div>';
+        } else if (vote.daysLeft === 1) {
+          urgentBadge = '<div class="urgent-badge danger">⏰ 明日締切！</div>';
+        } else if (vote.daysLeft <= 3) {
+          urgentBadge = '<div class="urgent-badge">⏰ 残り' + vote.daysLeft + '日</div>';
+        }
+      }
+
       return `
-        <div class="vote-card" data-url="${vote.formUrl}">
+        <div class="vote-card" data-vote-id="${vote.voteId}">
+          ${urgentBadge}
           <div class="vote-card-title">${escapeHtml(vote.title)}</div>
           ${vote.description ? `<div class="vote-card-description">${escapeHtml(vote.description)}</div>` : ''}
+
+          ${stats.total > 0 ? `
+            <div class="vote-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${percentage}%"></div>
+              </div>
+              <div class="vote-stats">
+                <span>👥 ${stats.responded}/${stats.total}人 回答済み</span>
+                <span>${percentage}%</span>
+              </div>
+            </div>
+          ` : ''}
+
           <div class="vote-card-meta">
             <span>${deadlineText}</span>
             <span class="vote-status ${statusClass}">${statusText}</span>
           </div>
+
+          <div class="vote-actions">
+            <button class="btn btn-primary" onclick="openVoteForm('${vote.formUrl}'); event.stopPropagation();">
+              Formを開く
+            </button>
+            <button class="btn btn-secondary" onclick="openVoteDetail('${vote.voteId}'); event.stopPropagation();">
+              詳細を見る
+            </button>
+          </div>
         </div>
       `;
+    }
+
+    /**
+     * 投票カードのリスナー追加
+     */
+    function addVoteCardListeners() {
+      // 既にボタンにonclickがあるので、カード全体のクリックは不要
     }
 
     /**
@@ -503,12 +661,19 @@
         const title = document.getElementById('vote-title').value.trim();
         const description = document.getElementById('vote-description').value.trim();
         const deadline = document.getElementById('vote-deadline').value;
+        const targetMembersText = document.getElementById('target-members').value.trim();
 
         // 選択肢を取得
         const optionInputs = document.querySelectorAll('.option-input');
         const options = Array.from(optionInputs)
           .map(input => input.value.trim())
           .filter(val => val !== '');
+
+        // 応答対象者を配列に変換
+        const targetMembers = targetMembersText
+          .split('\n')
+          .map(s => s.trim())
+          .filter(s => s);
 
         // バリデーション
         if (!title) {
@@ -518,6 +683,11 @@
 
         if (options.length < 2) {
           showAlert('選択肢を2つ以上入力してください', 'warning');
+          return;
+        }
+
+        if (targetMembers.length === 0) {
+          showAlert('応答対象者を1名以上入力してください', 'warning');
           return;
         }
 
@@ -538,7 +708,8 @@
             title: title,
             description: description,
             options: options,
-            deadline: deadline
+            deadline: deadline,
+            targetMembers: targetMembers
           })
         });
 
@@ -548,13 +719,16 @@
           throw new Error(result.error || '投票の作成に失敗しました');
         }
 
-        // 成功
-        showAlert('投票を作成しました！', 'success');
+        // 成功：データを保存
+        currentVoteData = result;
 
-        // モーダルを閉じる
+        // 作成モーダルを閉じる
         document.getElementById('create-vote-modal').style.display = 'none';
         document.getElementById('create-vote-form').reset();
         resetOptions();
+
+        // 成功モーダルを表示
+        showSuccessModal(result);
 
         // リストを再読み込み
         await loadVotes();
@@ -568,6 +742,79 @@
         btnSubmit.disabled = false;
         btnSubmit.textContent = '作成する';
       }
+    }
+
+    /**
+     * 成功モーダルを表示
+     */
+    function showSuccessModal(result) {
+      const modal = document.getElementById('success-modal');
+      const flexContent = document.getElementById('flex-message-content');
+
+      // Flex MessageをJSON表示
+      flexContent.innerHTML = '<pre>' + JSON.stringify(result.flexMessage, null, 2) + '</pre>';
+
+      modal.style.display = 'block';
+    }
+
+    /**
+     * 成功モーダルを閉じる
+     */
+    function closeSuccessModal() {
+      document.getElementById('success-modal').style.display = 'none';
+      currentVoteData = null;
+    }
+
+    /**
+     * LINEで共有
+     */
+    function shareToLine() {
+      if (!currentVoteData) return;
+
+      if (liff.isInClient()) {
+        liff.shareTargetPicker([{
+          type: 'flex',
+          altText: currentVoteData.title || '新しい投票',
+          contents: currentVoteData.flexMessage
+        }]).then(() => {
+          showAlert('共有しました！', 'success');
+          closeSuccessModal();
+        }).catch(error => {
+          console.error('共有エラー:', error);
+          showAlert('共有に失敗しました', 'error');
+        });
+      } else {
+        showAlert('LINE内でのみ使用できます', 'warning');
+      }
+    }
+
+    /**
+     * Form URLをコピー
+     */
+    function copyFormUrl() {
+      if (!currentVoteData) return;
+
+      navigator.clipboard.writeText(currentVoteData.formUrl).then(() => {
+        showAlert('URLをコピーしました！', 'success');
+      }).catch(error => {
+        console.error('コピーエラー:', error);
+        showAlert('コピーに失敗しました', 'error');
+      });
+    }
+
+    /**
+     * Flex MessageをコピーFalse
+     */
+    function copyFlexMessage() {
+      if (!currentVoteData) return;
+
+      const jsonText = JSON.stringify(currentVoteData.flexMessage, null, 2);
+      navigator.clipboard.writeText(jsonText).then(() => {
+        showAlert('Flex Messageをコピーしました！', 'success');
+      }).catch(error => {
+        console.error('コピーエラー:', error);
+        showAlert('コピーに失敗しました', 'error');
+      });
     }
 
     /**
@@ -622,6 +869,13 @@
       } else {
         window.open(url, '_blank');
       }
+    }
+
+    /**
+     * 投票詳細ページを開く（vote-detail.html）
+     */
+    function openVoteDetail(voteId) {
+      window.location.href = `./vote-detail.html?voteId=${voteId}`;
     }
 
     /**

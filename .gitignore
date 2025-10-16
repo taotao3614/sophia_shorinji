@@ -1,3 +1,6 @@
+# Config with sensitive data
+config/config.json
+
 # Dependencies
 node_modules/
 
