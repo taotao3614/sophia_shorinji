@@ -681,15 +681,27 @@ function initializeMasterSheet() {
     var ss = SpreadsheetApp.getActiveSpreadsheet();  // バインドされたスプレッドシートを取得
     var sheet = ss.getSheetByName(MASTER_SHEET_NAME);
 
-    // 既存のシートがある場合は削除
+    // 既存のシートがある場合
     if (sheet) {
-      Logger.log('既存の主表を削除します: ' + MASTER_SHEET_NAME);
-      ss.deleteSheet(sheet);
+      Logger.log('既存の主表が見つかりました: ' + MASTER_SHEET_NAME);
+
+      // シートが唯一のシートかチェック
+      var allSheets = ss.getSheets();
+      if (allSheets.length === 1) {
+        Logger.log('唯一のシートなので、内容をクリアして再利用します');
+        sheet.clear();  // 内容をクリア
+      } else {
+        Logger.log('既存の主表を削除します');
+        ss.deleteSheet(sheet);
+        sheet = null;
+      }
     }
 
-    // 新しいシートを作成
-    Logger.log('新しい主表を作成します: ' + MASTER_SHEET_NAME);
-    sheet = ss.insertSheet(MASTER_SHEET_NAME);
+    // 新しいシートを作成（削除した場合のみ）
+    if (!sheet) {
+      Logger.log('新しい主表を作成します: ' + MASTER_SHEET_NAME);
+      sheet = ss.insertSheet(MASTER_SHEET_NAME);
+    }
 
     // ヘッダー行を設定
     sheet.getRange(1, 1, 1, 10).setValues([[
@@ -816,15 +828,27 @@ function initializeMemberSheet() {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName(MEMBER_SHEET_NAME);
 
-    // 既存のシートがある場合は削除
+    // 既存のシートがある場合
     if (sheet) {
-      Logger.log('既存の人員管理表を削除します: ' + MEMBER_SHEET_NAME);
-      ss.deleteSheet(sheet);
+      Logger.log('既存の人員管理表が見つかりました: ' + MEMBER_SHEET_NAME);
+
+      // シートが唯一のシートかチェック
+      var allSheets = ss.getSheets();
+      if (allSheets.length === 1) {
+        Logger.log('唯一のシートなので、内容をクリアして再利用します');
+        sheet.clear();  // 内容をクリア
+      } else {
+        Logger.log('既存の人員管理表を削除します');
+        ss.deleteSheet(sheet);
+        sheet = null;
+      }
     }
 
-    // 新しいシートを作成
-    Logger.log('新しい人員管理表を作成します: ' + MEMBER_SHEET_NAME);
-    sheet = ss.insertSheet(MEMBER_SHEET_NAME);
+    // 新しいシートを作成（削除した場合のみ）
+    if (!sheet) {
+      Logger.log('新しい人員管理表を作成します: ' + MEMBER_SHEET_NAME);
+      sheet = ss.insertSheet(MEMBER_SHEET_NAME);
+    }
 
     // ヘッダー行（サンプル）
     sheet.getRange(1, 1, 1, 5).setValues([[

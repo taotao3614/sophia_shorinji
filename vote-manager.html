@@ -6,6 +6,10 @@
   <title>投票管理 - 上智大学少林寺拳法部</title>
   <link rel="stylesheet" href="./css/style.css">
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <!-- 共通関数ライブラリ -->
+  <script src="./js/common.js"></script>
+
   <style>
     /* 赤色テーマのオーバーライド */
     .header {
@@ -443,49 +447,23 @@
 
   <script>
     // ===== 設定 =====
-    // TODO: 以下のLIFF IDとGAS URLを実際の値に置き換えてください
-    const LIFF_ID = '2008292404-7kjGRzVn';  // あなたのLIFF ID
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwsGVwXluq1wLtcLxD1G4poINKSg1qKetjbqiG7Rpb5nHslJP1nkhgSUSPrqMOwi1zu/exec';  // あなたのGAS Web App URL
+    // common.js から LIFF_CONFIG を使用
+    // LIFF_CONFIG.liffId, LIFF_CONFIG.gasUrl が利用可能
 
-    let userProfile = null;
     let currentVoteData = null;  // 作成した投票データを保存
 
     /**
      * ページ初期化
      */
     async function initPage() {
-      showLoading();
       try {
-        // LIFF初期化（LIFF IDを直接渡す）
-        await liff.init({ liffId: LIFF_ID });
+        showLoading();
 
-        // ログイン状態をチェック
-        if (!liff.isLoggedIn()) {
-          // redirectUri を指定しない場合、LIFF Endpoint URL が使用される
-          liff.login();
-          return;
-        }
+        // LIFF初期化（common.js の initLiff を使用）
+        const profile = await initLiff();
+        if (!profile) return;  // ログインリダイレクト中
 
-        console.log('LIFF初期化成功');
-
-        // ユーザープロフィール取得
-        try {
-          const profile = await liff.getProfile();
-          userProfile = {
-            userId: profile.userId,
-            displayName: profile.displayName,
-            pictureUrl: profile.pictureUrl,
-            statusMessage: profile.statusMessage
-          };
-        } catch (error) {
-          console.log('プロフィール取得失敗（LIFF外の可能性）');
-          userProfile = {
-            userId: 'dummy_user',
-            displayName: 'テストユーザー',
-            pictureUrl: '',
-            statusMessage: ''
-          };
-        }
+        console.log('LIFF初期化成功:', profile.displayName);
 
         // 投票リストを読み込み
         await loadVotes();
@@ -556,21 +534,8 @@
      */
     async function loadVotes() {
       try {
-        const response = await fetch(GAS_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'listVotes'
-          })
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-          throw new Error(result.error || '投票リストの取得に失敗しました');
-        }
+        // callGAS を使用（common.js）
+        const result = await callGAS('listVotes');
 
         // 投票を表示
         renderVotes(result.votes);
@@ -589,21 +554,8 @@
      */
     async function loadGroupNames() {
       try {
-        const response = await fetch(GAS_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'getGroupNames'
-          })
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-          throw new Error(result.error || 'グループリストの取得に失敗しました');
-        }
+        // callGAS を使用（common.js）
+        const result = await callGAS('getGroupNames');
 
         // 下拉選択框にオプションを追加
         const selectElement = document.getElementById('target-group');
@@ -755,27 +707,14 @@
         btnSubmit.disabled = true;
         btnSubmit.textContent = '作成中...';
 
-        // GASに送信
-        const response = await fetch(GAS_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'createVote',
-            title: title,
-            description: description,
-            options: options,
-            deadline: deadline,
-            targetGroup: targetGroup  // 🆕 グループ名を送信
-          })
+        // GASに送信（callGAS を使用）
+        const result = await callGAS('createVote', {
+          title: title,
+          description: description,
+          options: options,
+          deadline: deadline,
+          targetGroup: targetGroup  // 🆕 グループ名を送信
         });
-
-        const result = await response.json();
-
-        if (!result.success) {
-          throw new Error(result.error || '投票の作成に失敗しました');
-        }
 
         // 成功：データを保存
         currentVoteData = result;
@@ -916,81 +855,29 @@
     }
 
     /**
-     * Google Formを開く
+     * Google Formを開く（openUrl を使用）
      */
     function openVoteForm(url) {
-      if (liff.isInClient()) {
-        liff.openWindow({
-          url: url,
-          external: true
-        });
-      } else {
-        window.open(url, '_blank');
-      }
+      openUrl(url);  // common.js の関数を使用
     }
 
     /**
-     * 回答表を開く
+     * 回答表を開く（openUrl を使用）
      */
     function openResponseSheet(url) {
       if (!url) {
         showAlert('回答表のURLが見つかりません', 'warning');
         return;
       }
-
-      if (liff.isInClient()) {
-        liff.openWindow({
-          url: url,
-          external: true
-        });
-      } else {
-        window.open(url, '_blank');
-      }
+      openUrl(url);  // common.js の関数を使用
     }
 
-    /**
-     * 日付フォーマット
-     */
-    function formatDate(dateString) {
-      if (!dateString) return '';
-      const date = new Date(dateString);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}/${month}/${day}`;
-    }
-
-    /**
-     * HTMLエスケープ
-     */
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    /**
-     * ローディング表示
-     */
-    function showLoading() {
-      // 実装省略（必要に応じて追加）
-      console.log('Loading...');
-    }
-
-    /**
-     * ローディング非表示
-     */
-    function hideLoading() {
-      // 実装省略（必要に応じて追加）
-      console.log('Loading complete');
-    }
-
-    /**
-     * アラート表示
-     */
-    function showAlert(message, type = 'info') {
-      alert(message);
-    }
+    // 以下の関数は common.js で定義されているため削除:
+    // - formatDate()
+    // - escapeHtml()
+    // - showLoading()
+    // - hideLoading()
+    // - showAlert()
 
     // ページロード時に初期化
     window.addEventListener('load', initPage);
