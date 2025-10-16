@@ -373,9 +373,16 @@
       transition: all 0.2s;
     }
 
-    .btn-add-question:hover {
+    .btn-add-question:hover:not(:disabled) {
       background: #fff5f5;
       border-color: #9a1f24;
+    }
+
+    .btn-add-question:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      border-color: #ccc;
+      color: #999;
     }
 
     .required-badge {
@@ -679,6 +686,9 @@
     // 🆕 LocalStorage キャッシュの設定
     const VOTES_CACHE_KEY = 'votes_cache';
     const CACHE_DURATION = 5 * 60 * 1000;  // 5分
+
+    // 🆕 防抖設定（問題追加ボタン用）
+    let isAddingQuestion = false;
 
     /**
      * ページ初期化
@@ -1031,21 +1041,63 @@
     }
 
     /**
-     * 問題を追加
+     * 問題を追加（防抖 + 自動スクロール付き）
      */
     function addQuestion() {
-      const newQuestion = {
-        id: questionIdCounter++,
-        type: 'radio',  // デフォルトは単一選択
-        title: '',
-        helpText: '',
-        required: true,
-        fixed: false,
-        options: ['選択肢1', '選択肢2']
-      };
+      // 🆕 防抖：既に追加処理中の場合は無視
+      if (isAddingQuestion) {
+        console.log('⚠️ 問題追加中です。しばらくお待ちください...');
+        return;
+      }
 
-      questions.push(newQuestion);
-      renderQuestions();
+      isAddingQuestion = true;
+
+      // ボタンを一時的に無効化してフィードバックを提供
+      const btn = document.getElementById('btn-add-question');
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '追加中...';
+
+      // 短い遅延を入れて視覚的フィードバック
+      setTimeout(() => {
+        const newQuestion = {
+          id: questionIdCounter++,
+          type: 'radio',  // デフォルトは単一選択
+          title: '',
+          helpText: '',
+          required: true,
+          fixed: false,
+          options: ['選択肢1', '選択肢2']
+        };
+
+        questions.push(newQuestion);
+        renderQuestions();
+
+        // 🆕 新しく追加された問題カードまでスクロール
+        setTimeout(() => {
+          const container = document.getElementById('questions-container');
+          const newCard = container.querySelector(`.question-card[data-question-id="${newQuestion.id}"]`);
+
+          if (newCard) {
+            newCard.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center'
+            });
+
+            // 🆕 視覚的な強調（ハイライトエフェクト）
+            newCard.style.transition = 'background-color 0.5s ease';
+            newCard.style.backgroundColor = '#fff5f5';
+            setTimeout(() => {
+              newCard.style.backgroundColor = '';
+            }, 1000);
+          }
+
+          // ボタンを再度有効化
+          btn.disabled = false;
+          btn.textContent = originalText;
+          isAddingQuestion = false;
+        }, 100);
+      }, 200);  // 200ms の遅延
     }
 
     /**
