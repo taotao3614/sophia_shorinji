@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>投票詳細 - 上智大学少林寺拳法部</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <!-- 共通関数ライブラリ -->
+  <script src="./js/common.js"></script>
+
+  <style>
+    /* 赤色テーマのオーバーライド */
+    .header {
+      background: var(--accent-red);
+    }
+
+    .header::after {
+      background: var(--accent-gold);
+    }
+
+    .card {
+      border-left-color: var(--accent-red);
+    }
+
+    .card-title {
+      color: var(--accent-red);
+    }
+
+    .btn-primary {
+      background-color: var(--accent-red);
+      color: var(--bg-white);
+    }
+
+    .btn-primary:hover {
+      background-color: #9a1f24;
+    }
+
+    /* 統計情報カード */
+    .stats-card {
+      background: var(--bg-white);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 16px;
+      background: #f9f9f9;
+      border-radius: 8px;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--accent-red);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+
+    /* 進捗バー */
+    .progress-bar-container {
+      width: 100%;
+      height: 24px;
+      background-color: #e0e0e0;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      margin: 16px 0;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-red) 0%, #d63940 100%);
+      transition: width 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 12px;
+    }
+
+    .progress-percentage {
+      color: white;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+
+    /* メンバーリスト */
+    .members-section {
+      margin-bottom: 24px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 12px 16px;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .member-count {
+      font-size: 0.9rem;
+      color: var(--text-light);
+      background: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+    }
+
+    .member-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 8px;
+    }
+
+    .member-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .member-item:hover {
+      border-color: var(--accent-red);
+      box-shadow: 0 2px 4px rgba(184, 40, 45, 0.1);
+    }
+
+    .member-icon {
+      font-size: 1.2rem;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+
+    .member-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .member-name {
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 2px;
+    }
+
+    .member-student-id {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      font-family: monospace;
+    }
+
+    /* 回答済み（緑色） */
+    .member-item.responded {
+      border-left: 3px solid #4CAF50;
+    }
+
+    .member-item.responded .member-icon {
+      color: #4CAF50;
+    }
+
+    /* 未回答（赤色） */
+    .member-item.not-responded {
+      border-left: 3px solid #ff5252;
+    }
+
+    .member-item.not-responded .member-icon {
+      color: #ff5252;
+    }
+
+    /* 投票情報カード */
+    .vote-info-card {
+      background: linear-gradient(135deg, var(--accent-red) 0%, #9a1f24 100%);
+      color: white;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(184, 40, 45, 0.2);
+    }
+
+    .vote-info-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .vote-info-description {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 16px;
+      opacity: 0.95;
+    }
+
+    .vote-info-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.85rem;
+      opacity: 0.9;
+    }
+
+    .vote-info-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ステータスバッジ */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .status-badge.active {
+      background: #4CAF50;
+    }
+
+    .status-badge.expired {
+      background: #999999;
+    }
+
+    /* アクションボタン */
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .action-buttons .btn {
+      flex: 1;
+    }
+
+    /* 空状態 */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-light);
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state-text {
+      font-size: 0.95rem;
+    }
+
+    /* 戻るボタン */
+    .back-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: transparent;
+      border: 2px solid var(--accent-red);
+      color: var(--accent-red);
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 20px;
+    }
+
+    .back-button:hover {
+      background: var(--accent-red);
+      color: white;
+    }
+
+    /* レスポンシブ対応 */
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .member-list {
+        grid-template-columns: 1fr;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📊 投票詳細</h1>
+    <p>回答状況の確認</p>
+  </div>
+
+  <div class="container">
+    <!-- 戻るボタン -->
+    <button class="back-button" onclick="goBack()">
+      ← 投票一覧に戻る
+    </button>
+
+    <!-- ローディング表示 -->
+    <div id="loading-container" class="loading">
+      <div class="spinner"></div>
+      <p style="margin-top: 16px; color: var(--text-light);">データを読み込んでいます...</p>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div id="main-content" style="display: none;">
+      <!-- 投票情報カード -->
+      <div class="vote-info-card" id="vote-info-card">
+        <!-- JavaScript で動的に生成 -->
+      </div>
+
+      <!-- 統計情報カード -->
+      <div class="stats-card">
+        <div class="card-title" style="margin-bottom: 16px;">📈 回答状況</div>
+
+        <div class="stats-grid" id="stats-grid">
+          <!-- JavaScript で動的に生成 -->
+        </div>
+
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progress-bar-fill">
+            <span class="progress-percentage" id="progress-percentage">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 回答済みメンバー -->
+      <div class="members-section">
+        <div class="section-header">
+          <span class="section-title">✅ 回答済みメンバー</span>
+          <span class="member-count" id="responded-count">0人</span>
+        </div>
+        <div class="member-list" id="responded-list">
+          <!-- JavaScript で動的に生成 -->
+        </div>
+      </div>
+
+      <!-- 未回答メンバー -->
+      <div class="members-section">
+        <div class="section-header">
+          <span class="section-title">⚠️ 未回答メンバー</span>
+          <span class="member-count" id="not-responded-count">0人</span>
+        </div>
+        <div class="member-list" id="not-responded-list">
+          <!-- JavaScript で動的に生成 -->
+        </div>
+      </div>
+
+      <!-- アクションボタン -->
+      <div class="action-buttons">
+        <button class="btn btn-primary" id="btn-open-form">
+          📝 Google Formを開く
+        </button>
+        <button class="btn btn-secondary" id="btn-open-sheet">
+          📊 回答シートを開く
+        </button>
+      </div>
+    </div>
+
+    <!-- エラー表示 -->
+    <div id="error-container" style="display: none;">
+      <div class="empty-state">
+        <div class="empty-state-icon">❌</div>
+        <div class="empty-state-text" id="error-message">データの取得に失敗しました</div>
+        <button class="btn btn-primary" onclick="goBack()" style="margin-top: 20px;">
+          投票一覧に戻る
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2025 上智大学少林寺拳法部</p>
+  </div>
+
+  <script>
+    // グローバル変数
+    let voteData = null;
+
+    /**
+     * ページ初期化
+     */
+    async function initPage() {
+      try {
+        // LIFF初期化
+        const profile = await initLiff();
+        if (!profile) {
+          console.log('LIFF未初期化 - ログインリダイレクト中');
+          return;
+        }
+
+        console.log('✅ LIFF初期化成功:', profile.displayName);
+
+        // URLパラメータからformUrlを取得
+        const params = new URLSearchParams(window.location.search);
+        const formUrl = params.get('formUrl');
+
+        if (!formUrl) {
+          throw new Error('投票URLが指定されていません');
+        }
+
+        console.log('📋 投票URLを取得:', formUrl);
+
+        // 投票詳細データを取得
+        await loadVoteDetail(formUrl);
+
+      } catch (error) {
+        console.error('初期化エラー:', error);
+        showError(error.message);
+      }
+    }
+
+    /**
+     * 投票詳細データを読み込み
+     */
+    async function loadVoteDetail(formUrl) {
+      try {
+        document.getElementById('loading-container').style.display = 'block';
+        document.getElementById('main-content').style.display = 'none';
+        document.getElementById('error-container').style.display = 'none';
+
+        console.log('🔄 投票詳細を取得中...');
+        const result = await callGAS('getVoteDetail', { formUrl });
+
+        if (!result.success) {
+          throw new Error(result.error || '投票詳細の取得に失敗しました');
+        }
+
+        voteData = result;
+        console.log('✅ 投票詳細を取得:', voteData);
+
+        // データを表示
+        renderVoteDetail(voteData);
+
+        document.getElementById('loading-container').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+
+      } catch (error) {
+        console.error('投票詳細取得エラー:', error);
+        document.getElementById('loading-container').style.display = 'none';
+        showError(error.message);
+      }
+    }
+
+    /**
+     * 投票詳細を表示
+     */
+    function renderVoteDetail(data) {
+      const { vote, stats, respondedMembers, notRespondedMembers } = data;
+
+      // 投票情報カード
+      renderVoteInfo(vote);
+
+      // 統計情報
+      renderStats(stats);
+
+      // 回答済みメンバー
+      renderMemberList('responded-list', respondedMembers, 'responded');
+      document.getElementById('responded-count').textContent = `${respondedMembers.length}人`;
+
+      // 未回答メンバー
+      renderMemberList('not-responded-list', notRespondedMembers, 'not-responded');
+      document.getElementById('not-responded-count').textContent = `${notRespondedMembers.length}人`;
+
+      // アクションボタン
+      setupActionButtons(vote);
+    }
+
+    /**
+     * 投票情報を表示
+     */
+    function renderVoteInfo(vote) {
+      const statusClass = vote.status === 'active' ? 'active' : 'expired';
+      const statusText = vote.status === 'active' ? '進行中' : '終了';
+      const deadlineText = vote.deadline ? formatDate(vote.deadline) : '締切なし';
+
+      const html = `
+        <div class="vote-info-title">${escapeHtml(vote.title)}</div>
+        ${vote.description ? `<div class="vote-info-description">${escapeHtml(vote.description)}</div>` : ''}
+        <div class="vote-info-meta">
+          <div class="vote-info-meta-item">
+            <span>📅</span>
+            <span>締切: ${deadlineText}</span>
+          </div>
+          <div class="vote-info-meta-item">
+            <span class="status-badge ${statusClass}">${statusText}</span>
+          </div>
+          ${vote.daysLeft !== null && vote.daysLeft >= 0 ? `
+            <div class="vote-info-meta-item">
+              <span>⏰</span>
+              <span>残り ${vote.daysLeft} 日</span>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      document.getElementById('vote-info-card').innerHTML = html;
+    }
+
+    /**
+     * 統計情報を表示
+     */
+    function renderStats(stats) {
+      const percentage = stats.total > 0
+        ? Math.round((stats.respondedCount / stats.total) * 100)
+        : 0;
+
+      // 統計グリッド
+      const statsHtml = `
+        <div class="stat-item">
+          <div class="stat-number">${stats.total}</div>
+          <div class="stat-label">対象者数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" style="color: #4CAF50;">${stats.respondedCount}</div>
+          <div class="stat-label">回答済み</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" style="color: #ff5252;">${stats.notRespondedCount}</div>
+          <div class="stat-label">未回答</div>
+        </div>
+      `;
+      document.getElementById('stats-grid').innerHTML = statsHtml;
+
+      // 進捗バー
+      const progressBar = document.getElementById('progress-bar-fill');
+      const progressPercentage = document.getElementById('progress-percentage');
+
+      // アニメーション効果
+      setTimeout(() => {
+        progressBar.style.width = `${percentage}%`;
+        progressPercentage.textContent = `${percentage}%`;
+      }, 100);
+    }
+
+    /**
+     * メンバーリストを表示
+     */
+    function renderMemberList(containerId, members, type) {
+      const container = document.getElementById(containerId);
+
+      if (members.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="empty-state-icon">${type === 'responded' ? '✅' : '📭'}</div>
+            <div class="empty-state-text">
+              ${type === 'responded' ? 'まだ回答がありません' : '全員が回答済みです'}
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const icon = type === 'responded' ? '✅' : '⚠️';
+      const html = members.map(member => `
+        <div class="member-item ${type}">
+          <div class="member-icon">${icon}</div>
+          <div class="member-info">
+            <div class="member-name">${escapeHtml(member.name)}</div>
+            <div class="member-student-id">${escapeHtml(member.studentId)}</div>
+          </div>
+        </div>
+      `).join('');
+
+      container.innerHTML = html;
+    }
+
+    /**
+     * アクションボタンをセットアップ
+     */
+    function setupActionButtons(vote) {
+      document.getElementById('btn-open-form').addEventListener('click', () => {
+        openUrl(vote.formUrl);
+      });
+
+      document.getElementById('btn-open-sheet').addEventListener('click', () => {
+        if (vote.responseSheetUrl) {
+          openUrl(vote.responseSheetUrl);
+        } else {
+          showAlert('回答シートのURLが見つかりません', 'warning');
+        }
+      });
+    }
+
+    /**
+     * エラーを表示
+     */
+    function showError(message) {
+      document.getElementById('error-message').textContent = message;
+      document.getElementById('error-container').style.display = 'block';
+      document.getElementById('main-content').style.display = 'none';
+    }
+
+    /**
+     * 投票一覧に戻る
+     */
+    function goBack() {
+      window.history.back();
+    }
+
+    // ページロード時に初期化
+    window.addEventListener('load', initPage);
+  </script>
+</body>
+</html>

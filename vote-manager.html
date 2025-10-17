@@ -170,12 +170,25 @@
       display: flex;
       gap: 8px;
       margin-top: 8px;
+      flex-wrap: wrap;
     }
 
     .vote-actions .btn {
       flex: 1;
+      min-width: 100px;
       padding: 8px 12px;
       font-size: 0.85rem;
+    }
+
+    /* モバイル対応：3つのボタンがある場合 */
+    @media (max-width: 600px) {
+      .vote-actions {
+        flex-direction: column;
+      }
+
+      .vote-actions .btn {
+        width: 100%;
+      }
     }
 
     /* モーダルスタイル */
@@ -1027,7 +1040,10 @@
           ${vote.description ? `<div class="vote-card-description">${escapeHtml(vote.description)}</div>` : ''}
 
           <div class="vote-actions">
-            <button class="btn btn-primary" onclick="openVoteForm('${vote.formUrl}'); event.stopPropagation();">
+            <button class="btn btn-primary" onclick="openVoteDetail('${vote.formUrl}'); event.stopPropagation();">
+              詳細を見る
+            </button>
+            <button class="btn btn-secondary" onclick="openVoteForm('${vote.formUrl}'); event.stopPropagation();">
               Formを開く
             </button>
             <button class="btn btn-secondary" onclick="openResponseSheet('${vote.responseSheetUrl}'); event.stopPropagation();">
@@ -1552,6 +1568,14 @@
           <input type="text" class="form-input option-input" placeholder="選択肢2" required>
         </div>
       `;
+    }
+
+    /**
+     * 投票詳細ページを開く
+     */
+    function openVoteDetail(formUrl) {
+      const detailUrl = `vote-detail.html?formUrl=${encodeURIComponent(formUrl)}`;
+      window.location.href = detailUrl;
     }
 
     /**
