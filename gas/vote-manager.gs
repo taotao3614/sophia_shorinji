@@ -497,12 +497,53 @@ function getResponseStatsQuick(formId, targetGroup) {
 }
 
 /**
- * 回答詳細を取得（🆕 学号ベースの比較）
+ * 回答詳細を取得（🆕 学号ベースの比較 + 🚀 パフォーマンス最適化）
  */
 function getResponseDetails(formId, targetGroup) {
   try {
-    // 1. 対象グループの学号リストを取得
-    var targetStudentIds = getStudentIdsByGroup(targetGroup);
+    // 🚀 最適化: 人員管理表を1回だけ読み込み、学号→姓名のマップを作成
+    var sheet = getMemberSheet();
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+
+    // グループ列を探す
+    var groupColIndex = -1;
+    for (var i = 2; i < headers.length; i++) {
+      if (headers[i] === targetGroup) {
+        groupColIndex = i;
+        break;
+      }
+    }
+
+    if (groupColIndex === -1) {
+      Logger.log('グループ「' + targetGroup + '」が見つかりません');
+      return {
+        targetMembers: [],
+        respondedMembers: [],
+        notRespondedMembers: []
+      };
+    }
+
+    // 🚀 対象グループの学号リストと学号→姓名マップを同時に作成
+    var targetStudentIds = [];
+    var studentIdToNameMap = {};  // 学号→姓名のマップ
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var studentId = String(row[0]);
+      var name = row[1];
+      var groupValue = row[groupColIndex];
+
+      // 全ての学号→姓名のマッピングを保存（後で使用）
+      if (studentId && name) {
+        studentIdToNameMap[studentId] = name;
+      }
+
+      // 対象グループに所属している場合
+      if (groupValue === 1 || groupValue === '1' || groupValue === true) {
+        targetStudentIds.push(studentId);
+      }
+    }
 
     if (targetStudentIds.length === 0) {
       return {
@@ -512,46 +553,49 @@ function getResponseDetails(formId, targetGroup) {
       };
     }
 
-    // 2. Formの回答を取得
+    // 🚀 Formの回答を取得
     var form = FormApp.openById(formId);
     var responses = form.getResponses();
 
-    // 3. 回答者の学号を抽出（最初の質問が学号）
+    // 🚀 回答者の学号を抽出（最初の質問が学号）
     var respondedStudentIds = [];
+    var respondedSet = {};  // Set代わりに使用（高速検索用）
+
     responses.forEach(function(response) {
       var itemResponses = response.getItemResponses();
       if (itemResponses.length > 0) {
         var studentId = String(itemResponses[0].getResponse()).trim();
-        if (studentId) {
+        if (studentId && !respondedSet[studentId]) {
           respondedStudentIds.push(studentId);
+          respondedSet[studentId] = true;
         }
       }
     });
 
-    // 4. 未回答者を計算
+    // 🚀 未回答者を計算（O(n) の高速フィルタリング）
     var notRespondedStudentIds = targetStudentIds.filter(function(id) {
-      return respondedStudentIds.indexOf(id) === -1;
+      return !respondedSet[id];
     });
 
-    // 5. 学号を {studentId, name} オブジェクトに変換
+    // 🚀 学号を {studentId, name} オブジェクトに変換（マップから直接取得）
     var targetMembers = targetStudentIds.map(function(id) {
       return {
         studentId: id,
-        name: getNameByStudentId(id)
+        name: studentIdToNameMap[id] || id
       };
     });
 
     var respondedMembers = respondedStudentIds.map(function(id) {
       return {
         studentId: id,
-        name: getNameByStudentId(id)
+        name: studentIdToNameMap[id] || id
       };
     });
 
     var notRespondedMembers = notRespondedStudentIds.map(function(id) {
       return {
         studentId: id,
-        name: getNameByStudentId(id)
+        name: studentIdToNameMap[id] || id
       };
     });
 
