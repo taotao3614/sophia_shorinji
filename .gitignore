@@ -20,3 +20,5 @@ Thumbs.db
 *.tmp
 temp/
 Claude.md
+
+supabase.md
