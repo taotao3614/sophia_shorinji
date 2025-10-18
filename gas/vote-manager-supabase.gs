@@ -421,7 +421,7 @@ function listVotes(params) {
     var now = new Date();
 
     // 締切をチェックしてステータスを更新
-    votes.forEach(function(vote) {
+    votes = votes.map(function(vote) {
       var daysLeft = null;
 
       if (vote.deadline && vote.status === 'active') {
@@ -440,10 +440,21 @@ function listVotes(params) {
         }
       }
 
-      // レスポンスデータを整形
-      vote.daysLeft = daysLeft;
-      vote.targetGroup = vote.groups ? vote.groups.group_name : '';
-      delete vote.groups;  // 不要なネストを削除
+      // 🔄 フロントエンド用にcamelCaseに変換
+      return {
+        voteId: vote.id,
+        formUrl: vote.form_url,
+        formId: vote.form_id,
+        responseSheetUrl: vote.response_sheet_url,
+        title: vote.title,
+        description: vote.description,
+        createdAt: vote.created_at,
+        deadline: vote.deadline,
+        status: vote.status,
+        targetGroup: vote.groups ? vote.groups.group_name : '',
+        daysLeft: daysLeft,
+        reminderSent: vote.reminder_sent
+      };
     });
 
     return {
