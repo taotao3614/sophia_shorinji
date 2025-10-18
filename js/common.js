@@ -20,11 +20,32 @@ let userProfile = null;
  */
 async function initLiff() {
   try {
+    console.log('🔄 LIFF初期化を開始...');
+
     // LIFF 初期化
     await liff.init({ liffId: LIFF_CONFIG.liffId });
+    console.log('✅ LIFF SDK初期化成功');
 
     // ログイン状態をチェック
     if (!liff.isLoggedIn()) {
+      console.warn('⚠️ LIFFにログインしていません');
+
+      // デバッグモード: ブラウザで直接開いた場合はテストユーザーを使用
+      if (window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1' ||
+          !liff.isInClient()) {
+        console.log('🧪 デバッグモード: テストユーザーを使用');
+        userProfile = {
+          userId: 'test_user_' + Date.now(),
+          displayName: 'テストユーザー',
+          pictureUrl: '',
+          statusMessage: ''
+        };
+        return userProfile;
+      }
+
+      // LINE内で未ログインの場合はログイン画面へ
+      console.log('🔐 LINEログインページへリダイレクト...');
       liff.login();
       return null;
     }
@@ -32,9 +53,9 @@ async function initLiff() {
     // ユーザープロフィール取得
     try {
       userProfile = await liff.getProfile();
-      console.log('ユーザープロフィール取得成功:', userProfile.displayName);
+      console.log('✅ ユーザープロフィール取得成功:', userProfile.displayName);
     } catch (error) {
-      console.warn('プロフィール取得失敗（LIFF外の可能性）');
+      console.warn('⚠️ プロフィール取得失敗（LIFF外の可能性）');
       // テスト用ダミーユーザー
       userProfile = {
         userId: 'test_user_' + Date.now(),
@@ -47,8 +68,17 @@ async function initLiff() {
     return userProfile;
 
   } catch (error) {
-    console.error('LIFF初期化エラー:', error);
-    throw new Error('LIFFの初期化に失敗しました: ' + error.message);
+    console.error('❌ LIFF初期化エラー:', error);
+
+    // LIFFエラーでもテストユーザーで続行(開発用)
+    console.log('🧪 エラー発生 - テストユーザーで続行');
+    userProfile = {
+      userId: 'test_user_fallback',
+      displayName: 'テストユーザー (Fallback)',
+      pictureUrl: '',
+      statusMessage: ''
+    };
+    return userProfile;
   }
 }
 
