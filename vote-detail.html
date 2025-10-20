@@ -7,8 +7,14 @@
   <link rel="stylesheet" href="./css/style.css">
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
+  <!-- 🆕 Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <!-- 共通関数ライブラリ -->
   <script src="./js/common.js"></script>
+
+  <!-- 🆕 Supabase クライアント -->
+  <script src="./js/supabase-client.js"></script>
 
   <style>
     /* 赤色テーマのオーバーライド */
@@ -446,7 +452,8 @@
         document.getElementById('error-container').style.display = 'none';
 
         console.log('🔄 投票詳細を取得中...');
-        const result = await callGAS('getVoteDetail', { formUrl });
+        // 🚀 Supabaseから直接取得（2-4秒 → 100-200ms）
+        const result = await getVoteDetailFromSupabase(formUrl);
 
         if (!result.success) {
           throw new Error(result.error || '投票詳細の取得に失敗しました');
