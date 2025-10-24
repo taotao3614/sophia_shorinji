@@ -268,9 +268,13 @@ function createVote(params) {
     // 回答用のSpreadsheetを作成して関連付け
     const responseSpreadsheet = SpreadsheetApp.create(title + ' (回答)');
     form.setDestination(FormApp.DestinationType.SPREADSHEET, responseSpreadsheet.getId());
-    const responseSheetUrl = responseSpreadsheet.getUrl();
 
-    Logger.log('回答用スプレッドシート作成完了: ' + responseSheetUrl);
+    // 🆕 リンクを知っている全員が閲覧可能に設定
+    const file = DriveApp.getFileById(responseSpreadsheet.getId());
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    const responseSheetUrl = responseSpreadsheet.getUrl();
+    Logger.log('回答用スプレッドシート作成完了（リンク共有有効）: ' + responseSheetUrl);
 
     // ========== 🆕 Supabaseに保存 ==========
 
