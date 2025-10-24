@@ -1578,10 +1578,11 @@
 
     /**
      * 投票詳細ページを開く
+     * ルーティング経由で vote-detail.html へ遷移
      */
     function openVoteDetail(formUrl) {
-      const detailUrl = `vote-detail.html?formUrl=${encodeURIComponent(formUrl)}`;
-      window.location.href = detailUrl;
+      // common.js の navigateToPage 関数を使用
+      navigateToPage('vote-detail', { formUrl: formUrl });
     }
 
     /**

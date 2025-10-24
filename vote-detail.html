@@ -626,9 +626,11 @@
 
     /**
      * 投票一覧に戻る
+     * ルーティング経由で vote-manager.html へ遷移
      */
     function goBack() {
-      window.history.back();
+      // common.js の navigateToPage 関数を使用
+      navigateToPage('vote');
     }
 
     // ページロード時に初期化

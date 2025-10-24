@@ -329,6 +329,23 @@ function openUrl(url) {
 }
 
 /**
+ * アプリ内ページへルーティング経由で遷移
+ * @param {string} page - ページ名 ('vote', 'vote-detail', 'attendance', 'notice')
+ * @param {Object} params - 追加のクエリパラメータ（オプション）
+ */
+function navigateToPage(page, params = {}) {
+  const url = new URL('index.html', window.location.href);
+  url.searchParams.set('page', page);
+
+  // 追加パラメータを設定
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+
+  window.location.href = url.href;
+}
+
+/**
  * デバッグログ出力（開発環境のみ）
  * @param {...any} args - ログ内容
  */

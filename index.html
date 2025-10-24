@@ -66,6 +66,7 @@
     // ページマッピング
     const PAGE_MAP = {
       'vote': './vote-manager.html',
+      'vote-detail': './vote-detail.html',       // 投票詳細ページ
       'attendance': './attendance-manager.html',  // 将来実装
       'notice': './notice-manager.html'          // 将来実装
     };
@@ -94,8 +95,17 @@
           return;
         }
 
-        // ページにリダイレクト
-        window.location.href = targetPage;
+        // ページにリダイレクト（全てのクエリパラメータを引き継ぐ）
+        const targetUrl = new URL(targetPage, window.location.href);
+
+        // page 以外のパラメータを全て引き継ぐ
+        for (const [key, value] of urlParams.entries()) {
+          if (key !== 'page') {
+            targetUrl.searchParams.set(key, value);
+          }
+        }
+
+        window.location.href = targetUrl.href;
 
       } catch (error) {
         console.error('初期化エラー:', error);
@@ -112,6 +122,7 @@
     function getPageName(page) {
       const nameMap = {
         'vote': '投票管理',
+        'vote-detail': '投票詳細',
         'attendance': '出勤管理',
         'notice': '通知管理'
       };
