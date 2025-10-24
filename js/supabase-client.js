@@ -70,9 +70,13 @@ async function getVotesFromSupabase() {
         }
       }
 
-      // レスポンスデータを整形
+      // レスポンスデータを整形（snake_case → camelCase）
       vote.daysLeft = daysLeft;
       vote.targetGroup = vote.groups ? vote.groups.group_name : '';
+      vote.formUrl = vote.form_url;              // 🐛 修正：formUrl を追加
+      vote.formId = vote.form_id;                // 🐛 修正：formId を追加
+      vote.responseSheetUrl = vote.response_sheet_url;  // 🐛 修正：responseSheetUrl を追加
+      vote.voteId = vote.id;                     // 🐛 修正：voteId を追加
       delete vote.groups;  // 不要なネストを削除
     }
 

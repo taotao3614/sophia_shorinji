@@ -1443,14 +1443,17 @@
         clearVotesCache();
         updateVotesInBackground();  // 非同期更新（await しない）
 
-        // 🆕 成功通知（一瞬表示）
-        showAlert('✅ 投票を作成しました！Google Formを開きます...', 'success');
+        // 🆕 成功通知
+        const successMessage = isInLineApp()
+          ? '✅ 投票を作成しました！\n外部ブラウザでGoogle Formを開きます。\n※そのまま共有してください！'
+          : '✅ 投票を作成しました！\n新しいタブでGoogle Formを開きます。';
+        showAlert(successMessage, 'success');
 
-        // 🆕 1秒後に Google Form へ直接ジャンプ
+        // 🆕 Google Form を外部ブラウザで開く（共有可能）
         setTimeout(() => {
-          console.log('📝 Google Form へリダイレクト:', result.formUrl);
-          window.location.href = result.formUrl;  // 直接ジャンプ
-        }, 1000);
+          console.log('📝 Google Form を外部ブラウザで開く:', result.formUrl);
+          openUrl(result.formUrl);  // 外部ブラウザで開く（共有可能）
+        }, 1500);
 
       } catch (error) {
         console.error('投票作成エラー:', error);

@@ -318,12 +318,16 @@ function escapeHtml(text) {
  * @param {string} url - 開く URL
  */
 function openUrl(url) {
+  console.log('🌐 URLを開く:', url);
+
   if (isInLineApp()) {
+    console.log('📱 LINE内で実行中 - 外部ブラウザで開きます');
     liff.openWindow({
       url: url,
-      external: true
+      external: true  // 外部ブラウザで開く（共有可能）
     });
   } else {
+    console.log('💻 ブラウザで実行中 - 新しいタブで開きます');
     window.open(url, '_blank');
   }
 }
@@ -334,14 +338,22 @@ function openUrl(url) {
  * @param {Object} params - 追加のクエリパラメータ（オプション）
  */
 function navigateToPage(page, params = {}) {
-  const url = new URL('index.html', window.location.href);
+  // 現在のベースURLを取得（最後のファイル名を除く）
+  const currentUrl = window.location.href;
+  const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1);
+
+  // index.html へのURLを構築
+  const url = new URL('index.html', baseUrl);
   url.searchParams.set('page', page);
 
   // 追加パラメータを設定
   for (const [key, value] of Object.entries(params)) {
-    url.searchParams.set(key, value);
+    if (value !== undefined && value !== null) {
+      url.searchParams.set(key, value);
+    }
   }
 
+  console.log('🔀 ページ遷移:', page, 'URL:', url.href);
   window.location.href = url.href;
 }
 
